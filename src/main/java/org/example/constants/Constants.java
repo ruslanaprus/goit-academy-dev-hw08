@@ -13,8 +13,6 @@ public class Constants {
     public static final String SQL_SQLITE_DIR = "src/main/resources/sql/sqlite/";
 
     // Common SQL file names
-    public static final String INIT_DB_SQL = "init_db.sql";
-    public static final String POPULATE_DB_SQL = "populate_db.sql";
     public static final String FIND_MAX_SALARY_WORKER_SQL = "find_max_salary_worker.sql";
     public static final String FIND_LONGEST_PROJECT_SQL = "find_longest_project.sql";
     public static final String FIND_MAX_PROJECT_CLIENT_SQL = "find_max_projects_client.sql";

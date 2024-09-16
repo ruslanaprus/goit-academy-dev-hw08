@@ -20,10 +20,6 @@ public class AppLauncher {
         MetricRegistry metricRegistry = new MetricRegistry();
         MetricsLogger.startLogging(metricRegistry);
 
-        // SQLite database setup
-//        runDatabaseOperations(DatabaseType.SQLITE, metricRegistry);
-
-        // Postgres database setup
         runDatabaseOperations(DatabaseType.POSTGRES, metricRegistry);
     }
 
@@ -47,17 +43,6 @@ public class AppLauncher {
         longestProjectSql = getSqlFilePath(dbType, FIND_LONGEST_PROJECT_SQL);
         youngestEldestSql = getSqlFilePath(dbType, FIND_YOUNGEST_ELDEST_SQL);
         dropTables = getSqlFilePath(dbType, DROP_TABLES_SQL);
-
-        // Drop tables if needed
-//        DatabaseDropTableService dropTableService = DatabaseServiceFactory.createDatabaseDropTableService(connectionManager, metricRegistry);
-//        dropTableService.dropAllTables();
-
-        // Initialize and populate the database
-        DatabaseInitService initService = DatabaseServiceFactory.createDatabaseInitService(connectionManager, metricRegistry);
-        initService.initializeDatabase(initSql);
-
-        DatabasePopulateService populateService = DatabaseServiceFactory.createDatabasePopulateService(connectionManager, metricRegistry);
-        populateService.addEntities(populateSql);
 
         // Query operations
         DatabaseQueryService queryService = DatabaseServiceFactory.createDatabaseQueryService(connectionManager, metricRegistry);
