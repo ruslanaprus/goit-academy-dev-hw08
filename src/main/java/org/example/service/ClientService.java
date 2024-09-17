@@ -3,6 +3,7 @@ package org.example.service;
 import com.codahale.metrics.MetricRegistry;
 import org.example.db.ConnectionManager;
 import org.example.db.SQLExecutor;
+import org.example.mapper.ClientMapper;
 import org.example.model.Client;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,21 +13,74 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import static org.example.constants.Constants.INSERT_INTO_CLIENTS;
 import static org.example.constants.Constants.LIST_ALL_CLIENTS;
 
 public class ClientService {
     private static final Logger logger = LoggerFactory.getLogger(ClientService.class);
     private final ConnectionManager connectionManager;
     private final MetricRegistry metricRegistry;
+    private final GenericDatabaseService<Client> clientService;
 
     public ClientService(ConnectionManager connectionManager, MetricRegistry metricRegistry) {
         this.connectionManager = connectionManager;
         this.metricRegistry = metricRegistry;
+        this.clientService = new GenericDatabaseService<>(connectionManager, metricRegistry);
     }
 
     public long create(String name){
-        return 0;
+        try (Connection connection = connectionManager.getConnection();
+             PreparedStatement statement = connection.prepareStatement(INSERT_INTO_CLIENTS, Statement.RETURN_GENERATED_KEYS)) {
+
+            statement.setString(1, name);
+
+            int affectedRows = statement.executeUpdate();
+
+            if (affectedRows > 0) {
+                try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
+                    if (generatedKeys.next()) {
+                        return generatedKeys.getLong(1);
+                    }
+                }
+            } else {
+                logger.error("Failed to insert the client, no rows affected");
+            }
+        } catch (SQLException e) {
+            logger.error("Error adding a client to the database", e);
+        }
+        return -1;
     }
+
+    public long createClient(Client client) {
+        return clientService.insertEntity(INSERT_INTO_CLIENTS, client, new ClientMapper());
+    }
+
+    public Optional<Client> addClient(String name) {
+
+        try (Connection connection = connectionManager.getConnection();
+             PreparedStatement statement = connection.prepareStatement(INSERT_INTO_CLIENTS, Statement.RETURN_GENERATED_KEYS)) {
+
+            statement.setString(1, name);
+            int affectedRows = statement.executeUpdate();
+
+            if (affectedRows > 0) {
+                try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
+                    if (generatedKeys.next()) {
+                        long generatedId = generatedKeys.getLong(1);
+                        Client client = new Client(generatedId, name);
+                        return Optional.of(client);
+                    }
+                }
+            } else {
+                logger.error("Failed to insert the client, no rows affected.");
+            }
+        } catch (SQLException e) {
+            logger.error("Error adding a client to the database", e);
+        }
+
+        return Optional.empty();
+    }
+
 
     public String getById(long id){
         return "";

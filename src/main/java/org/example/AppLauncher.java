@@ -6,6 +6,7 @@ import org.example.db.ConnectionManager;
 import org.example.db.Database;
 import org.example.db.Postgresql;
 import org.example.db.SQLite;
+import org.example.model.Client;
 import org.example.log.MetricsLogger;
 import org.example.service.*;
 import org.slf4j.Logger;
@@ -36,6 +37,8 @@ public class AppLauncher {
         ClientService clientService = DatabaseServiceFactory.manageClients(connectionManager, metricRegistry);
 
         clientService.listAll().stream().toList().forEach(System.out::println);
+
+        clientService.createClient(new Client("Kitten"));
 
         clientService.listAllClients().ifPresent(clients -> {
             logger.info("Client(s) found: {}", clients.size());
