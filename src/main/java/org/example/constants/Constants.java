@@ -24,4 +24,8 @@ public class Constants {
     public static String getSqlFilePath(DatabaseType databaseType, String fileName) {
         return databaseType.getSqlDirectory() + fileName;
     }
+
+    // CRUD for Clients table
+    public static final String LIST_ALL_CLIENTS = "SELECT id, name FROM client LIMIT 50";
+    public static final String INSERT_INTO_CLIENTS = "INSERT INTO client (name) VALUES (?)";
 }

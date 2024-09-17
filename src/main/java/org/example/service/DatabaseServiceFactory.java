@@ -19,4 +19,8 @@ public class DatabaseServiceFactory {
     public static DatabaseQueryService createDatabaseQueryService(ConnectionManager connectionManager, MetricRegistry metricRegistry) {
         return new DatabaseQueryService(connectionManager, metricRegistry);
     }
+
+    public static ClientService manageClients(ConnectionManager connectionManager, MetricRegistry metricRegistry) {
+        return new ClientService(connectionManager, metricRegistry);
+    }
 }

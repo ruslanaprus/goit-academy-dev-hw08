@@ -66,7 +66,10 @@ public class SQLExecutor implements AutoCloseable {
         }
     }
 
-    public <T> Optional<List<T>> executeQuery(String sqlFilePath, String errorMessage, ResultSetMapper<T> mapper) {
+    /**
+     * Executes SQL queries loaded from a file
+     */
+    public <T> Optional<List<T>> executeQueryFromFile(String sqlFilePath, String errorMessage, ResultSetMapper<T> mapper) {
         List<T> result = new ArrayList<>();
 
         Path path = Paths.get(sqlFilePath);
@@ -93,6 +96,32 @@ public class SQLExecutor implements AutoCloseable {
         return Optional.of(result);
     }
 
+    /**
+     * Executes SQL query String
+     */
+    public <T> Optional<List<T>> executeQuery(String query, String errorMessage, ResultSetMapper<T> mapper) {
+        List<T> result = new ArrayList<>();
+        Timer.Context context = metricRegistry.timer("sql-query-timer").time();
+
+        try (PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+            try (ResultSet rs = preparedStatement.executeQuery()) {
+                if (!rs.isBeforeFirst()) {
+                    return Optional.empty();
+                }
+                while (rs.next()) {
+                    result.add(mapper.map(rs));
+                }
+            }
+        } catch (SQLException e) {
+            logger.error(errorMessage, e);
+            return Optional.empty();
+        } finally {
+            context.stop();
+        }
+
+        return Optional.of(result);
+    }
+
     @Override
     public void close() {
         try {
@@ -103,5 +132,9 @@ public class SQLExecutor implements AutoCloseable {
         } catch (SQLException e) {
             logger.error("Failed to close the connection", e);
         }
+    }
+
+    public interface ResultSetMapper<T> {
+        T map(ResultSet rs) throws SQLException;
     }
 }

@@ -23,7 +23,7 @@ public class DatabaseQueryService {
         String errorMessage = "Failed to execute findMaxSalaryWorker query";
 
         try (SQLExecutor executor = new SQLExecutor(connectionManager.getConnection(), metricRegistry)) {
-            return executor.executeQuery(
+            return executor.executeQueryFromFile(
                     sqlFilePath,
                     errorMessage,
                     rs -> new MaxSalaryWorker(
@@ -38,7 +38,7 @@ public class DatabaseQueryService {
         String errorMessage = "Failed to execute findMaxProjectsClient query";
 
         try (SQLExecutor executor = new SQLExecutor(connectionManager.getConnection(), metricRegistry)) {
-            return executor.executeQuery(
+            return executor.executeQueryFromFile(
                     sqlFilePath,
                     errorMessage,
                     rs -> new MaxProjectCountClient(
@@ -53,7 +53,7 @@ public class DatabaseQueryService {
         String errorMessage = "Failed to execute printProjectPrices query";
 
         try (SQLExecutor executor = new SQLExecutor(connectionManager.getConnection(), metricRegistry)) {
-            return executor.executeQuery(
+            return executor.executeQueryFromFile(
                     sqlFilePath,
                     errorMessage,
                     rs -> new ProjectPriceInfo(
@@ -68,7 +68,7 @@ public class DatabaseQueryService {
         String errorMessage = "Failed to execute findLongestProject query";
 
         try (SQLExecutor executor = new SQLExecutor(connectionManager.getConnection(), metricRegistry)) {
-            return executor.executeQuery(
+            return executor.executeQueryFromFile(
                     sqlFilePath,
                     errorMessage,
                     rs -> new LongestProject(
@@ -85,7 +85,7 @@ public class DatabaseQueryService {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
         try (SQLExecutor executor = new SQLExecutor(connectionManager.getConnection(), metricRegistry)) {
-            return executor.executeQuery(
+            return executor.executeQueryFromFile(
                     sqlFilePath,
                     errorMessage,
                     rs -> new YoungestEldestWorker(
