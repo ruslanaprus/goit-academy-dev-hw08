@@ -6,11 +6,13 @@ import org.example.db.ConnectionManager;
 import org.example.db.Database;
 import org.example.db.Postgresql;
 import org.example.db.SQLite;
-import org.example.model.Client;
 import org.example.log.MetricsLogger;
+import org.example.model.Client;
 import org.example.service.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Optional;
 
 import static org.example.constants.Constants.*;
 
@@ -36,20 +38,56 @@ public class AppLauncher {
 
         ClientService clientService = DatabaseServiceFactory.manageClients(connectionManager, metricRegistry);
 
-        clientService.listAll().stream().toList().forEach(System.out::println);
+        performCreateOperations(clientService);
+        performUpdateOperations(clientService);
+        performDeleteOperations(clientService);
+        performReadOperations(clientService);
+    }
 
-        clientService.create("Milky Meow Co.");
+    private static void performReadOperations(ClientService clientService) {
+        logger.info("Listing all clients:");
 
-        clientService.deleteById(10);
+        clientService.listAll().forEach(System.out::println);
 
-        clientService.setName(13, "Kitten");
-
-        int testId = 13;
+        int testId = 5;
         logger.info("clientById={} is {}", testId, clientService.getById(testId));
 
-        clientService.listAllClients().ifPresent(clients -> {
-            logger.info("Client(s) found: {}", clients.size());
-            clients.forEach(client -> logger.info(client.toString()));
-        });
+        Optional<String> clientName = clientService.getClientById(testId);
+        clientName.ifPresentOrElse(
+                name -> logger.info("Client name: {}", name),
+                () -> logger.warn("No client found with ID: {}", testId)
+        );
+
+        clientService.listAllClients().ifPresentOrElse(
+                clients -> {
+                    logger.info("Client(s) found: {}", clients.size());
+                    clients.forEach(client -> logger.info(client.toString()));
+                },
+                () -> logger.warn("No clients found")
+        );
+    }
+
+    private static void performCreateOperations(ClientService clientService) {
+        logger.info("Creating a new client");
+        clientService.create("Milky Meow Co.");
+
+        Optional<Client> result = clientService.createClient("TestClient");
+        result.ifPresentOrElse(
+                client -> logger.info("Client added with ID: {}", client.getId()),
+                () -> logger.warn("Client addition failed")
+        );
+    }
+
+    private static void performUpdateOperations(ClientService clientService) {
+        int clientId = 13;
+        String newName = "Kitten";
+        logger.info("Updating client with ID {} to new name: {}", clientId, newName);
+        clientService.setName(13, "Kitten");
+    }
+
+    private static void performDeleteOperations(ClientService clientService) {
+        int deleteId = 21;
+        logger.info("Deleting client with ID: {}", deleteId);
+        clientService.deleteById(deleteId);
     }
 }
