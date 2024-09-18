@@ -38,13 +38,14 @@ public class AppLauncher {
 
         clientService.listAll().stream().toList().forEach(System.out::println);
 
-        clientService.createClient(new Client("Kitten"));
+        clientService.create("Milky Meow Co.");
 
-        clientService.deleteById(8);
+        clientService.deleteById(10);
 
-        clientService.setName(10, "Paws Box");
+        clientService.setName(13, "Kitten");
 
-        System.out.println("clientService.getById(10) = " + clientService.getById(10));
+        int testId = 13;
+        logger.info("clientById={} is {}", testId, clientService.getById(testId));
 
         clientService.listAllClients().ifPresent(clients -> {
             logger.info("Client(s) found: {}", clients.size());

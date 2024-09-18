@@ -27,25 +27,30 @@ public class ClientService {
         this.clientService = new GenericDatabaseService<>(connectionManager, metricRegistry);
     }
 
-    public long create(String name){
-        try (Connection connection = connectionManager.getConnection();
-             PreparedStatement statement = connection.prepareStatement(INSERT_INTO_CLIENTS, Statement.RETURN_GENERATED_KEYS)) {
+    public long create(String name) {
+        try {
+            validateName(name);
+            try (Connection connection = connectionManager.getConnection();
+                 PreparedStatement statement = connection.prepareStatement(INSERT_INTO_CLIENTS, Statement.RETURN_GENERATED_KEYS)) {
 
-            statement.setString(1, name);
+                statement.setString(1, name);
 
-            int affectedRows = statement.executeUpdate();
+                int affectedRows = statement.executeUpdate();
 
-            if (affectedRows > 0) {
-                try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
-                    if (generatedKeys.next()) {
-                        return generatedKeys.getLong(1);
+                if (affectedRows > 0) {
+                    try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
+                        if (generatedKeys.next()) {
+                            return generatedKeys.getLong(1);
+                        }
                     }
+                } else {
+                    logger.error("Failed to insert the client, no rows affected");
                 }
-            } else {
-                logger.error("Failed to insert the client, no rows affected");
             }
         } catch (SQLException e) {
-            logger.error("Error adding a client to the database", e);
+            logger.error("SQL error while adding a client to the database. SQLState: {}, ErrorCode: {}", e.getSQLState(), e.getErrorCode(), e);
+        } catch (IllegalArgumentException e) {
+            logger.error("Invalid client name: {}", e.getMessage());
         }
         return -1;
     }
@@ -56,30 +61,34 @@ public class ClientService {
 
     public Optional<Client> addClient(String name) {
 
-        try (Connection connection = connectionManager.getConnection();
-             PreparedStatement statement = connection.prepareStatement(INSERT_INTO_CLIENTS, Statement.RETURN_GENERATED_KEYS)) {
+        try {
+            validateName(name);
+            try (Connection connection = connectionManager.getConnection();
+                 PreparedStatement statement = connection.prepareStatement(INSERT_INTO_CLIENTS, Statement.RETURN_GENERATED_KEYS)) {
 
-            statement.setString(1, name);
-            int affectedRows = statement.executeUpdate();
+                statement.setString(1, name);
+                int affectedRows = statement.executeUpdate();
 
-            if (affectedRows > 0) {
-                try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
-                    if (generatedKeys.next()) {
-                        long generatedId = generatedKeys.getLong(1);
-                        Client client = new Client(generatedId, name);
-                        return Optional.of(client);
+                if (affectedRows > 0) {
+                    try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
+                        if (generatedKeys.next()) {
+                            long generatedId = generatedKeys.getLong(1);
+                            Client client = new Client(generatedId, name);
+                            return Optional.of(client);
+                        }
                     }
+                } else {
+                    logger.error("Failed to insert the client, no rows affected.");
                 }
-            } else {
-                logger.error("Failed to insert the client, no rows affected.");
             }
         } catch (SQLException e) {
-            logger.error("Error adding a client to the database", e);
+            logger.error("SQL error while adding a client to the database. SQLState: {}, ErrorCode: {}", e.getSQLState(), e.getErrorCode(), e);
+        } catch (IllegalArgumentException e) {
+            logger.error("Invalid client name: {}", e.getMessage());
         }
 
         return Optional.empty();
     }
-
 
     public String getById(long id) {
         Client client = new Client();
@@ -94,31 +103,58 @@ public class ClientService {
                 client.setId(resultSet.getLong("id"));
                 client.setName(resultSet.getString("name"));
             }
-        } catch (SQLException e){
-            logger.error("Error getting client by id", e);
+        } catch (SQLException e) {
+            logger.error("SQL error while getting client by id {}. SQLState: {}, ErrorCode: {}", id, e.getSQLState(), e.getErrorCode(), e);
         }
         return client.getName();
     }
 
-    public void setName(long id, String name){
+    public Optional<String> getClientById(long id) {
+        Client client = new Client();
+
         try (Connection connection = connectionManager.getConnection();
-             PreparedStatement preparedStatement = connection.prepareStatement(SET_NEW_CLIENTS_NAME)) {
+             PreparedStatement preparedStatement = connection.prepareStatement(GET_CLIENT_BY_ID)) {
+            preparedStatement.setLong(1, id);
 
-            preparedStatement.setString(1, name);
-            preparedStatement.setLong(2, id);
+            ResultSet resultSet = preparedStatement.executeQuery();
 
-            int affectedRows = preparedStatement.executeUpdate();
-            if (affectedRows > 0) {
-                logger.info("Successfully updated a client with id {}", id);
+            if (resultSet.next()) {
+                client.setId(resultSet.getLong("id"));
+                client.setName(resultSet.getString("name"));
+                return Optional.of(client.getName());
             } else {
-                logger.error("Failed to update a client with id {}", id);
+                logger.warn("No client found with id {}", id);
             }
-        } catch (SQLException e){
-            logger.error("Error updating a client by id", e);
+        } catch (SQLException e) {
+            logger.error("SQL error while getting client by id {}. SQLState: {}, ErrorCode: {}", id, e.getSQLState(), e.getErrorCode(), e);
+        }
+        return Optional.empty();
+    }
+
+    public void setName(long id, String name) {
+        try {
+            validateName(name);
+            try (Connection connection = connectionManager.getConnection();
+                 PreparedStatement preparedStatement = connection.prepareStatement(SET_NEW_CLIENTS_NAME)) {
+
+                preparedStatement.setString(1, name);
+                preparedStatement.setLong(2, id);
+
+                int affectedRows = preparedStatement.executeUpdate();
+                if (affectedRows > 0) {
+                    logger.info("Successfully updated a client with id {}", id);
+                } else {
+                    logger.error("Failed to update a client with id {}", id);
+                }
+            }
+        } catch (SQLException e) {
+            logger.error("SQL error while updating client with id {}. SQLState: {}, ErrorCode: {}", id, e.getSQLState(), e.getErrorCode(), e);
+        } catch (IllegalArgumentException e) {
+            logger.error("Invalid client name: {}", e.getMessage());
         }
     }
 
-    public void deleteById(long id){
+    public void deleteById(long id) {
         try (Connection connection = connectionManager.getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(DELETE_CLIENT_BY_ID)) {
             preparedStatement.setLong(1, id);
@@ -131,11 +167,11 @@ public class ClientService {
                 logger.error("Failed to delete the client, no rows affected");
             }
         } catch (SQLException e) {
-            logger.error("Error deleting a client from the database", e);
+            logger.error("SQL error while deleting client with id {}. SQLState: {}, ErrorCode: {}", id, e.getSQLState(), e.getErrorCode(), e);
         }
     }
 
-    public List<Client> listAll(){
+    public List<Client> listAll() {
         List<Client> clients = new ArrayList<>();
 
         try (Connection connection = connectionManager.getConnection();
@@ -150,7 +186,7 @@ public class ClientService {
                 clients.add(client);
             }
         } catch (SQLException e) {
-            logger.error("Error fetching clients from a database", e);
+            logger.error("SQL error while fetching clients. SQLState: {}, ErrorCode: {}", e.getSQLState(), e.getErrorCode(), e);
         }
 
         return clients;
@@ -165,6 +201,12 @@ public class ClientService {
                     errorMessage,
                     rs -> new Client(rs.getLong("id"), rs.getString("name"))
             );
+        }
+    }
+
+    private void validateName(String name) throws IllegalArgumentException {
+        if (name == null || name.length() < 2 || name.length() > 1000) {
+            throw new IllegalArgumentException("Client name must be between 2 and 1000 characters.");
         }
     }
 }
