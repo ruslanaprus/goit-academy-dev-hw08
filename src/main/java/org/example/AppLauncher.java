@@ -40,6 +40,8 @@ public class AppLauncher {
 
         clientService.createClient(new Client("Kitten"));
 
+        clientService.deleteById(8);
+
         clientService.listAllClients().ifPresent(clients -> {
             logger.info("Client(s) found: {}", clients.size());
             clients.forEach(client -> logger.info(client.toString()));

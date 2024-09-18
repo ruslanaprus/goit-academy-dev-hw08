@@ -13,8 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import static org.example.constants.Constants.INSERT_INTO_CLIENTS;
-import static org.example.constants.Constants.LIST_ALL_CLIENTS;
+import static org.example.constants.Constants.*;
 
 public class ClientService {
     private static final Logger logger = LoggerFactory.getLogger(ClientService.class);
@@ -90,7 +89,20 @@ public class ClientService {
     }
 
     public void deleteById(long id){
+        try (Connection connection = connectionManager.getConnection();
+             PreparedStatement preparedStatement = connection.prepareStatement(DELETE_CLIENT_BY_ID)) {
+            preparedStatement.setLong(1, id);
 
+            int affectedRows = preparedStatement.executeUpdate();
+
+            if (affectedRows > 0) {
+                logger.info("Client with id {} was deleted", id);
+            } else {
+                logger.error("Failed to delete the client, no rows affected");
+            }
+        } catch (SQLException e) {
+            logger.error("Error deleting a client from the database", e);
+        }
     }
 
     public List<Client> listAll(){

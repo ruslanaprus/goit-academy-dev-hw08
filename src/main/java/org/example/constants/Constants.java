@@ -28,7 +28,7 @@ public class Constants {
     // CRUD for Clients table
     public static final String LIST_ALL_CLIENTS = "SELECT id, name FROM client LIMIT 50";
     public static final String INSERT_INTO_CLIENTS = "INSERT INTO client (name) VALUES (?)";
-    public static final String GET_CLIENT_BY_ID = "SELECT name FROM client WHERE id = ?";
-    public static final String SET_NEW_CLIENTS_NAME = "UPDATE client SET name = ?";
+    public static final String GET_CLIENT_BY_ID = "SELECT id, name FROM client WHERE id = ?";
+    public static final String SET_NEW_CLIENTS_NAME = "UPDATE client SET name = ? WHERE id = ?";
     public static final String DELETE_CLIENT_BY_ID = "DELETE FROM client WHERE id = ?";
 }
