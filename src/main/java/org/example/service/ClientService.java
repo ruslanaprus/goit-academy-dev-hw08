@@ -3,7 +3,6 @@ package org.example.service;
 import com.codahale.metrics.MetricRegistry;
 import org.example.db.ConnectionManager;
 import org.example.db.SQLExecutor;
-import org.example.mapper.ClientMapper;
 import org.example.model.Client;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,12 +18,10 @@ public class ClientService {
     private static final Logger logger = LoggerFactory.getLogger(ClientService.class);
     private final ConnectionManager connectionManager;
     private final MetricRegistry metricRegistry;
-    private final GenericDatabaseService<Client> clientService;
 
     public ClientService(ConnectionManager connectionManager, MetricRegistry metricRegistry) {
         this.connectionManager = connectionManager;
         this.metricRegistry = metricRegistry;
-        this.clientService = new GenericDatabaseService<>(connectionManager, metricRegistry);
     }
 
     public long create(String name) {
@@ -55,41 +52,6 @@ public class ClientService {
         return -1;
     }
 
-    public long createClient(Client client) {
-        return clientService.insertEntity(INSERT_INTO_CLIENTS, client, new ClientMapper());
-    }
-
-    public Optional<Client> addClient(String name) {
-
-        try {
-            validateName(name);
-            try (Connection connection = connectionManager.getConnection();
-                 PreparedStatement statement = connection.prepareStatement(INSERT_INTO_CLIENTS, Statement.RETURN_GENERATED_KEYS)) {
-
-                statement.setString(1, name);
-                int affectedRows = statement.executeUpdate();
-
-                if (affectedRows > 0) {
-                    try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
-                        if (generatedKeys.next()) {
-                            long generatedId = generatedKeys.getLong(1);
-                            Client client = new Client(generatedId, name);
-                            return Optional.of(client);
-                        }
-                    }
-                } else {
-                    logger.error("Failed to insert the client, no rows affected.");
-                }
-            }
-        } catch (SQLException e) {
-            logger.error("SQL error while adding a client to the database. SQLState: {}, ErrorCode: {}", e.getSQLState(), e.getErrorCode(), e);
-        } catch (IllegalArgumentException e) {
-            logger.error("Invalid client name: {}", e.getMessage());
-        }
-
-        return Optional.empty();
-    }
-
     public String getById(long id) {
         Client client = new Client();
 
@@ -107,28 +69,6 @@ public class ClientService {
             logger.error("SQL error while getting client by id {}. SQLState: {}, ErrorCode: {}", id, e.getSQLState(), e.getErrorCode(), e);
         }
         return client.getName();
-    }
-
-    public Optional<String> getClientById(long id) {
-        Client client = new Client();
-
-        try (Connection connection = connectionManager.getConnection();
-             PreparedStatement preparedStatement = connection.prepareStatement(GET_CLIENT_BY_ID)) {
-            preparedStatement.setLong(1, id);
-
-            ResultSet resultSet = preparedStatement.executeQuery();
-
-            if (resultSet.next()) {
-                client.setId(resultSet.getLong("id"));
-                client.setName(resultSet.getString("name"));
-                return Optional.of(client.getName());
-            } else {
-                logger.warn("No client found with id {}", id);
-            }
-        } catch (SQLException e) {
-            logger.error("SQL error while getting client by id {}. SQLState: {}, ErrorCode: {}", id, e.getSQLState(), e.getErrorCode(), e);
-        }
-        return Optional.empty();
     }
 
     public void setName(long id, String name) {
@@ -192,6 +132,62 @@ public class ClientService {
         return clients;
     }
 
+    /**
+     * Following methods are using Optional to provides a way of handling cases where data may be missing or the operation fails.
+     */
+    public Optional<Client> createClient(String name) {
+
+        try {
+            validateName(name);
+            try (Connection connection = connectionManager.getConnection();
+                 PreparedStatement statement = connection.prepareStatement(INSERT_INTO_CLIENTS, Statement.RETURN_GENERATED_KEYS)) {
+
+                statement.setString(1, name);
+                int affectedRows = statement.executeUpdate();
+
+                if (affectedRows > 0) {
+                    try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
+                        if (generatedKeys.next()) {
+                            long generatedId = generatedKeys.getLong(1);
+                            Client client = new Client(generatedId, name);
+                            return Optional.of(client);
+                        }
+                    }
+                } else {
+                    logger.error("Failed to insert the client, no rows affected.");
+                }
+            }
+        } catch (SQLException e) {
+            logger.error("SQL error while adding a client to the database. SQLState: {}, ErrorCode: {}", e.getSQLState(), e.getErrorCode(), e);
+        } catch (IllegalArgumentException e) {
+            logger.error("Invalid client name: {}", e.getMessage());
+        }
+
+        return Optional.empty();
+    }
+
+    public Optional<String> getClientById(long id) {
+        Client client = new Client();
+
+        try (Connection connection = connectionManager.getConnection();
+             PreparedStatement preparedStatement = connection.prepareStatement(GET_CLIENT_BY_ID)) {
+            preparedStatement.setLong(1, id);
+
+            ResultSet resultSet = preparedStatement.executeQuery();
+
+            if (resultSet.next()) {
+                client.setId(resultSet.getLong("id"));
+                client.setName(resultSet.getString("name"));
+                return Optional.of(client.getName());
+            } else {
+                logger.warn("No client found with id {}", id);
+            }
+        } catch (SQLException e) {
+            logger.error("SQL error while getting client by id {}. SQLState: {}, ErrorCode: {}", id, e.getSQLState(), e.getErrorCode(), e);
+        }
+        return Optional.empty();
+    }
+
     public Optional<List<Client>> listAllClients() {
         String errorMessage = "Failed to execute findMaxSalaryWorker query";
 
@@ -204,7 +200,7 @@ public class ClientService {
         }
     }
 
-    private void validateName(String name) throws IllegalArgumentException {
+    private void validateName(String name) {
         if (name == null || name.length() < 2 || name.length() > 1000) {
             throw new IllegalArgumentException("Client name must be between 2 and 1000 characters.");
         }
