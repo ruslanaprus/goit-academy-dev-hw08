@@ -81,8 +81,23 @@ public class ClientService {
     }
 
 
-    public String getById(long id){
-        return "";
+    public String getById(long id) {
+        Client client = new Client();
+
+        try (Connection connection = connectionManager.getConnection();
+             PreparedStatement preparedStatement = connection.prepareStatement(GET_CLIENT_BY_ID)) {
+            preparedStatement.setLong(1, id);
+
+            ResultSet resultSet = preparedStatement.executeQuery();
+
+            while (resultSet.next()) {
+                client.setId(resultSet.getLong("id"));
+                client.setName(resultSet.getString("name"));
+            }
+        } catch (SQLException e){
+            logger.error("Error getting client by id", e);
+        }
+        return client.getName();
     }
 
     public void setName(long id, String name){
