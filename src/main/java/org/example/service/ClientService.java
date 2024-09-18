@@ -86,6 +86,21 @@ public class ClientService {
     }
 
     public void setName(long id, String name){
+        try (Connection connection = connectionManager.getConnection();
+             PreparedStatement preparedStatement = connection.prepareStatement(SET_NEW_CLIENTS_NAME)) {
+
+            preparedStatement.setString(1, name);
+            preparedStatement.setLong(2, id);
+
+            int affectedRows = preparedStatement.executeUpdate();
+            if (affectedRows > 0) {
+                logger.info("Successfully updated a client with id {}", id);
+            } else {
+                logger.error("Failed to update a client with id {}", id);
+            }
+        } catch (SQLException e){
+            logger.error("Error updating a client by id", e);
+        }
     }
 
     public void deleteById(long id){

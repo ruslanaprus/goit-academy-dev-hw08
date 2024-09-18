@@ -42,6 +42,8 @@ public class AppLauncher {
 
         clientService.deleteById(8);
 
+        clientService.setName(10, "Paws Box");
+
         clientService.listAllClients().ifPresent(clients -> {
             logger.info("Client(s) found: {}", clients.size());
             clients.forEach(client -> logger.info(client.toString()));
