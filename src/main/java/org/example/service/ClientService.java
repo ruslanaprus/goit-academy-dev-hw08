@@ -61,9 +61,12 @@ public class ClientService {
 
             ResultSet resultSet = preparedStatement.executeQuery();
 
-            while (resultSet.next()) {
+            if (resultSet.next()) {
                 client.setId(resultSet.getLong("id"));
                 client.setName(resultSet.getString("name"));
+            } else {
+                logger.error("Failed to find client with id: {}", id);
+                return null;
             }
         } catch (SQLException e) {
             logger.error("SQL error while getting client by id {}. SQLState: {}, ErrorCode: {}", id, e.getSQLState(), e.getErrorCode(), e);
@@ -178,7 +181,7 @@ public class ClientService {
             if (resultSet.next()) {
                 client.setId(resultSet.getLong("id"));
                 client.setName(resultSet.getString("name"));
-                return Optional.of(client.getName());
+                return Optional.ofNullable(client.getName());
             } else {
                 logger.warn("No client found with id {}", id);
             }
