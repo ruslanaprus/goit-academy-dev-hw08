@@ -21,7 +21,9 @@ VALUES
 ('Purrfect Solutions'),
 ('Meowster Inc.'),
 ('Clawtastic Creations'),
-('Snack Caterprises')
+('Snack Caterprises'),
+('Should not be here'),
+('Test Client')
 ON CONFLICT DO NOTHING;
 
 INSERT INTO project (name, client_id, start_date, finish_date)

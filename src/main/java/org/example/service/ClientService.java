@@ -203,6 +203,52 @@ public class ClientService {
         }
     }
 
+    public Optional<Boolean> setClientName(long id, String name) {
+        try {
+            validateName(name);
+            try (Connection connection = connectionManager.getConnection();
+                 PreparedStatement preparedStatement = connection.prepareStatement(SET_NEW_CLIENTS_NAME)) {
+
+                preparedStatement.setString(1, name);
+                preparedStatement.setLong(2, id);
+
+                int affectedRows = preparedStatement.executeUpdate();
+                if (affectedRows > 0) {
+                    logger.info("Successfully updated a client with id {}", id);
+                    return Optional.of(true);
+                } else {
+                    logger.error("Failed to update a client with id {}", id);
+                    return Optional.empty();
+                }
+            }
+        } catch (SQLException e) {
+            logger.error("SQL error while updating client with id {}. SQLState: {}, ErrorCode: {}", id, e.getSQLState(), e.getErrorCode(), e);
+        } catch (IllegalArgumentException e) {
+            logger.error("Invalid client name: {}", e.getMessage());
+        }
+        return Optional.empty();
+    }
+
+    public Optional<Boolean> deleteClientById(long id) {
+        try (Connection connection = connectionManager.getConnection();
+             PreparedStatement preparedStatement = connection.prepareStatement(DELETE_CLIENT_BY_ID)) {
+
+            preparedStatement.setLong(1, id);
+
+            int affectedRows = preparedStatement.executeUpdate();
+            if (affectedRows > 0) {
+                logger.info("Client with id {} was deleted", id);
+                return Optional.of(true);
+            } else {
+                logger.error("Failed to delete the client, no rows affected");
+                return Optional.empty();
+            }
+        } catch (SQLException e) {
+            logger.error("SQL error while deleting client with id {}. SQLState: {}, ErrorCode: {}", id, e.getSQLState(), e.getErrorCode(), e);
+        }
+        return Optional.empty();
+    }
+
     private void validateName(String name) {
         if (name == null || name.length() < 2 || name.length() > 1000) {
             throw new IllegalArgumentException("Client name must be between 2 and 1000 characters.");
