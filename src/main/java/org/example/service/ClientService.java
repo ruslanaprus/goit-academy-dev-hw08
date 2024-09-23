@@ -100,7 +100,7 @@ public class ClientService implements BaseService {
         }
     }
 
-    public Optional<Boolean> setName(long id, String name) {
+    public Optional<Long> setName(long id, String name) {
         try {
             validateName(name);
             try (Connection connection = connectionManager.getConnection();
@@ -109,12 +109,12 @@ public class ClientService implements BaseService {
                 preparedStatement.setString(1, name);
                 preparedStatement.setLong(2, id);
 
-                int affectedRows = preparedStatement.executeUpdate();
+                long affectedRows = preparedStatement.executeUpdate();
                 if (affectedRows > 0) {
-                    logger.info("Successfully updated a client with id {}", id);
-                    return Optional.of(true);
+                    logger.info("Successfully updated {} row(s) for client with id {}", affectedRows, id);
+                    return Optional.of(affectedRows);
                 } else {
-                    logger.error("Failed to update a client with id {}", id);
+                    logger.error("Failed to update client with id {}, no rows affected", id);
                     return Optional.empty();
                 }
             }
@@ -126,18 +126,18 @@ public class ClientService implements BaseService {
         return Optional.empty();
     }
 
-    public Optional<Boolean> deleteById(long id) {
+    public Optional<Long> deleteById(long id) {
         try (Connection connection = connectionManager.getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(DELETE_CLIENT_BY_ID)) {
 
             preparedStatement.setLong(1, id);
 
-            int affectedRows = preparedStatement.executeUpdate();
+            long affectedRows = preparedStatement.executeUpdate();
             if (affectedRows > 0) {
-                logger.info("Client with id {} was deleted", id);
-                return Optional.of(true);
+                logger.info("Successfully deleted {} row(s) for client with id {}", affectedRows, id);
+                return Optional.of(affectedRows);
             } else {
-                logger.error("Failed to delete the client, no rows affected");
+                logger.error("Failed to delete client with id {}, no rows affected", id);
                 return Optional.empty();
             }
         } catch (SQLException e) {

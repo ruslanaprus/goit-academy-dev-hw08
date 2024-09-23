@@ -61,22 +61,59 @@ public class MyHttpServer implements HttpHandler {
     }
 
     private void handlePutRequest(HttpExchange exchange, BaseService service, String path) throws IOException {
-        Optional<Long> id = extractIdFromPath(path);
-        if (id.isPresent()) {
-            Object entity = jsonFormatter.jsonToObject(exchange, service.getJsonEntityMapper());
-            invokeMethod(exchange, service, "setName", new Class<?>[]{long.class, String.class}, new Object[]{id.get(), getNameFromEntity(entity)});
-        } else {
-            sendResponse(exchange, 400, "Invalid ID");
-        }
+        extractIdFromPath(path).ifPresentOrElse(
+                id -> {
+                    try {
+                        Map<String, String> requestBodyMap = jsonFormatter.jsonToObject(exchange, Map.class);
+                        String newName = requestBodyMap.get("name");
+
+                        if (newName == null || newName.isEmpty()) {
+                            sendResponse(exchange, 400, "Name field is required");
+                            return;
+                        }
+
+                        Optional<Long> result = (Optional<Long>) service.getClass().getMethod("setName", long.class, String.class)
+                                .invoke(service, id, newName);
+
+                        result.map(affectedRows -> {
+                            sendResponse(exchange, 200, "Updated rows: " + affectedRows);
+                            return affectedRows;
+                        }).orElseGet(() -> {
+                            sendResponse(exchange, 404, "Entity not found or no rows updated");
+                            return 0L;
+                        });
+
+                    } catch (ReflectiveOperationException e) {
+                        handleServerError(exchange, e);
+                    } catch (RuntimeException e) {
+                        sendResponse(exchange, 400, "Invalid request body: " + e.getMessage());
+                    }
+                },
+                () -> sendResponse(exchange, 400, "Invalid or missing ID")
+        );
     }
 
     private void handleDeleteRequest(HttpExchange exchange, BaseService service, String path) throws IOException {
-        Optional<Long> id = extractIdFromPath(path);
-        if (id.isPresent()) {
-            invokeMethod(exchange, service, "deleteById", new Class<?>[]{long.class}, new Object[]{id.get()});
-        } else {
-            sendResponse(exchange, 400, "Invalid ID");
-        }
+        extractIdFromPath(path).ifPresentOrElse(
+                id -> {
+                    try {
+                        Optional<Long> result = (Optional<Long>) service.getClass().getMethod("deleteById", long.class)
+                                .invoke(service, id);
+
+                        result.map(affectedRows -> {
+                            sendResponse(exchange, 200, "Deleted rows: " + affectedRows);
+                            return affectedRows;
+                        }).orElseGet(() -> {
+                            sendResponse(exchange, 404, "Entity not found or no rows deleted");
+                            return 0L;
+                        });
+
+                    } catch (ReflectiveOperationException e) {
+                        handleServerError(exchange, e);
+                    }
+                },
+                () -> sendResponse(exchange, 400, "Invalid ID")
+        );
     }
 
     private void invokeMethod(HttpExchange exchange, BaseService service, String methodName, Class<?>[] paramTypes, Object[] params) throws IOException {
@@ -94,14 +131,22 @@ public class MyHttpServer implements HttpHandler {
         }
     }
 
-    private void handleServerError(HttpExchange exchange, Exception e) throws IOException {
+    private void handleServerError(HttpExchange exchange, Exception e) {
         sendResponse(exchange, 500, "Internal Server Error: " + e.getMessage());
     }
 
-    private void sendResponse(HttpExchange exchange, int statusCode, String responseText) throws IOException {
+    private void sendResponse(HttpExchange exchange, int statusCode, String responseText) {
         byte[] responseBytes = responseText.getBytes(StandardCharsets.UTF_8);
-        exchange.sendResponseHeaders(statusCode, responseBytes.length);
-        exchange.getResponseBody().write(responseBytes);
+        try {
+            exchange.sendResponseHeaders(statusCode, responseBytes.length);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        try {
+            exchange.getResponseBody().write(responseBytes);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
         exchange.close();
     }
 
