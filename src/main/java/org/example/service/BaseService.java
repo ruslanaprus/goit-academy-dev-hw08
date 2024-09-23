@@ -1,6 +1,5 @@
 package org.example.service;
 
-import org.example.mapper.EntityMapper;
 import org.example.mapper.JsonEntityMapper;
 
 public interface BaseService {

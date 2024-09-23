@@ -17,15 +17,10 @@ public class ClientOperations {
     }
 
     private static void performReadOperations(ClientService clientService) {
-//        logger.info("Listing all clients:");
-//
-//        clientService.listAll().forEach(System.out::println);
-//
         int testId = 5;
-//        logger.info("clientById={} is {}", testId, clientService.getById(testId));
 
         logger.info("clientById={} is:", testId);
-        Optional<String> clientName = clientService.getById(testId);
+        Optional<Client> clientName = clientService.getById(testId);
         clientName.ifPresentOrElse(
                 name -> logger.info("Client name: {}", name),
                 () -> logger.warn("No client found with ID: {}", testId)
@@ -42,9 +37,6 @@ public class ClientOperations {
     }
 
     private static void performCreateOperations(ClientService clientService) {
-//        logger.info("Creating a new client");
-//        clientService.create("Milky Meow Co.");
-
         logger.info("Creating a new client");
         Optional<Client> result = clientService.create("Impawsible trails Inc.");
         result.ifPresentOrElse(

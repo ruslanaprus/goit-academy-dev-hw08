@@ -38,29 +38,29 @@ public class JsonFormatter {
     }
 
     // Convert an object to JSON (for single objects)
-//    public <T> String objectToJson(T obj) {
-//        try {
-//            return objectMapper.writeValueAsString(obj);
-//        } catch (JsonProcessingException e) {
-//            throw new RuntimeException("Failed to convert object to JSON", e);
-//        }
-//    }
-//
-//    // Convert a list of objects to JSON (for lists of objects)
-//    public <T> String objectToJson(List<T> list) {
-//        try {
-//            return objectMapper.writeValueAsString(list);
-//        } catch (JsonProcessingException e) {
-//            throw new RuntimeException("Failed to convert list of objects to JSON", e);
-//        }
-//    }
-//
-//    // Convert JSON to an object of the given class
-//    public <T> T jsonToObject(HttpExchange exchange, Class<T> clazz) {
-//        try {
-//            return objectMapper.readValue(exchange.getRequestBody(), clazz);
-//        } catch (IOException e) {
-//            throw new RuntimeException("Failed to convert JSON to object", e);
-//        }
-//    }
+    public <T> String objectToJson(T obj) {
+        try {
+            return objectMapper.writeValueAsString(obj);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to convert object to JSON", e);
+        }
+    }
+
+    // Convert a list of objects to JSON (for lists of objects)
+    public <T> String objectToJson(List<T> list) {
+        try {
+            return objectMapper.writeValueAsString(list);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to convert list of objects to JSON", e);
+        }
+    }
+
+    // Convert JSON to an object of the given class
+    public <T> T jsonToObject(HttpExchange exchange, Class<T> clazz) {
+        try {
+            return objectMapper.readValue(exchange.getRequestBody(), clazz);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to convert JSON to object", e);
+        }
+    }
 }
