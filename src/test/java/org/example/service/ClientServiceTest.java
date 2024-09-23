@@ -125,10 +125,10 @@ class ClientServiceTest {
         when(mockResultSet.next()).thenReturn(true);
         when(mockResultSet.getString("name")).thenReturn("Test Client");
 
-        Optional<String> clientName = clientService.getById(100L);
+        Optional<Client> clientName = clientService.getById(100L);
 
         assertTrue(clientName.isPresent());
-        assertEquals("Test Client", clientName.get());
+        assertEquals("Test Client", clientName.get().getName());
 
         verify(mockPreparedStatement).setLong(1, 100L);
         verify(mockPreparedStatement).executeQuery();
@@ -140,7 +140,7 @@ class ClientServiceTest {
         when(mockPreparedStatement.executeQuery()).thenReturn(mockResultSet);
         when(mockResultSet.next()).thenReturn(false);
 
-        Optional<String> clientName = clientService.getById(100L);
+        Optional<Client> clientName = clientService.getById(100L);
 
         assertFalse(clientName.isPresent());
     }
@@ -149,7 +149,7 @@ class ClientServiceTest {
     void testGetClientByIdSQLException() throws SQLException {
         when(mockConnection.prepareStatement(anyString())).thenThrow(new SQLException("Database error"));
 
-        Optional<String> clientName = clientService.getById(100L);
+        Optional<Client> clientName = clientService.getById(100L);
 
         assertFalse(clientName.isPresent());
     }
