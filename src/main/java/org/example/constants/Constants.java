@@ -32,6 +32,13 @@ public class Constants {
     public static final String SET_NEW_CLIENTS_NAME = "UPDATE client SET name = ? WHERE id = ?";
     public static final String DELETE_CLIENT_BY_ID = "DELETE FROM client WHERE id = ?";
 
+    // CRUD for Workers table
+    public static final String LIST_ALL_WORKERS = "SELECT id, name, birthday, email, level, salary FROM worker LIMIT 50";
+    public static final String INSERT_INTO_WORKERS = "INSERT INTO worker (name, birthday, email, level, salary) VALUES (?, ?, ?, ?, ?)";
+    public static final String GET_WORKER_BY_ID = "SELECT id, name, birthday, email, level, salary FROM worker WHERE id = ?";
+    public static final String SET_NEW_WORKERS_NAME = "UPDATE worker SET name = ? WHERE id = ?";
+    public static final String DELETE_WORKER_BY_ID = "DELETE FROM worker WHERE id = ?";
+
     // Port for HTTP server
     public static final int DEFAULT_PORT = 9001;
 }
