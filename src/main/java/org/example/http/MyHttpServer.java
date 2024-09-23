@@ -6,6 +6,7 @@ import org.example.formatter.JsonFormatter;
 import org.example.service.BaseService;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
@@ -48,10 +49,22 @@ public class MyHttpServer implements HttpHandler {
 
     private void handleGetRequest(HttpExchange exchange, BaseService service, String path) throws IOException {
         Optional<Long> id = extractIdFromPath(path);
-        if (id.isPresent()) {
-            invokeMethod(exchange, service, "getById", new Class<?>[]{long.class}, new Object[]{id.get()});
-        } else {
-            invokeMethod(exchange, service, "listAll", new Class<?>[]{}, new Object[]{});
+
+        try {
+            if (id.isPresent()) {
+                invokeMethod(exchange, service, "getById", new Class<?>[]{long.class}, new Object[]{id.get()});
+            } else {
+                Method listMethod = service.getClass().getMethod("listAll");
+                Optional<?> result = (Optional<?>) listMethod.invoke(service);
+
+                if (result.isPresent()) {
+                    sendResponse(exchange, 200, jsonFormatter.objectToJson(result.get()));
+                } else {
+                    sendResponse(exchange, 404, "No resources found");
+                }
+            }
+        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+            throw new RuntimeException("Failed to handle GET request", e);
         }
     }
 
