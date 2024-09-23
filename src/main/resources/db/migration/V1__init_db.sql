@@ -20,13 +20,13 @@ CREATE TABLE IF NOT EXISTS project (
 	finish_date DATE CHECK (finish_date >= start_date),
 	CONSTRAINT fk_client
     FOREIGN KEY (client_id)
-    REFERENCES client(id)
+    REFERENCES client(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS project_worker (
 	project_id INTEGER NOT NULL,
 	worker_id INTEGER NOT NULL,
 	PRIMARY KEY (project_id, worker_id),
-	FOREIGN KEY (project_id) REFERENCES project (id),
-	FOREIGN KEY (worker_id) REFERENCES worker (id)
+	FOREIGN KEY (project_id) REFERENCES project (id) ON DELETE CASCADE,
+	FOREIGN KEY (worker_id) REFERENCES worker (id) ON DELETE CASCADE
 );
