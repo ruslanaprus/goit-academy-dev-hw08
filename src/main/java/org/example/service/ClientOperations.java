@@ -17,12 +17,12 @@ public class ClientOperations {
     }
 
     private static void performReadOperations(ClientService clientService) {
-        logger.info("Listing all clients:");
-
-        clientService.listAll().forEach(System.out::println);
-
+//        logger.info("Listing all clients:");
+//
+//        clientService.listAll().forEach(System.out::println);
+//
         int testId = 5;
-        logger.info("clientById={} is {}", testId, clientService.getById(testId));
+//        logger.info("clientById={} is {}", testId, clientService.getById(testId));
 
         logger.info("clientById={} is:", testId);
         Optional<String> clientName = clientService.getClientById(testId);
@@ -42,8 +42,8 @@ public class ClientOperations {
     }
 
     private static void performCreateOperations(ClientService clientService) {
-        logger.info("Creating a new client");
-        clientService.create("Milky Meow Co.");
+//        logger.info("Creating a new client");
+//        clientService.create("Milky Meow Co.");
 
         logger.info("Creating a new client");
         Optional<Client> result = clientService.createClient("Impawsible trails Inc.");
@@ -57,13 +57,13 @@ public class ClientOperations {
         int clientId = 7;
         String newName = "Kitten Mittens";
         logger.info("Updating client with ID {} to new name: {}", clientId, newName);
-        clientService.setName(clientId, "Kitten Mittens");
+       // clientService.setName(clientId, "Kitten Mittens");
     }
 
     private static void performDeleteOperations(ClientService clientService) {
         int deleteId = 6;
         logger.info("Deleting client with ID: {}", deleteId);
-        clientService.deleteById(deleteId);
+      //  clientService.deleteById(deleteId);
     }
 }
 

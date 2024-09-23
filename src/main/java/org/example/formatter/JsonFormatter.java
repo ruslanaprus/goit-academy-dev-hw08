@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateSerializer;
 import com.sun.net.httpserver.HttpExchange;
-import org.example.model.Client;
 
 import java.io.IOException;
 import java.time.LocalDate;
@@ -14,9 +13,9 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 public class JsonFormatter {
-    private static ObjectMapper objectMapper = new ObjectMapper();
-    private static JavaTimeModule module = new JavaTimeModule();
-    private static DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    private static final ObjectMapper objectMapper = new ObjectMapper();
+    private static final JavaTimeModule module = new JavaTimeModule();
+    private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
     public JsonFormatter() {
         module.addSerializer(LocalDate.class, new LocalDateSerializer(formatter));
@@ -24,19 +23,30 @@ public class JsonFormatter {
         objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
     }
 
-    public String objectToJson(List<Client> list){
+    // Convert an object to JSON (for single objects)
+    public <T> String objectToJson(T obj) {
         try {
-            return objectMapper.writeValueAsString(list);
+            return objectMapper.writeValueAsString(obj);
         } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Failed to convert object to JSON", e);
         }
     }
 
-    public Client jsonToObject(HttpExchange exchange){
+    // Convert a list of objects to JSON (for lists of objects)
+    public <T> String objectToJson(List<T> list) {
         try {
-            return objectMapper.readValue(exchange.getRequestBody(), Client.class);
+            return objectMapper.writeValueAsString(list);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Failed to convert list of objects to JSON", e);
+        }
+    }
+
+    // Convert JSON to an object of the given class
+    public <T> T jsonToObject(HttpExchange exchange, Class<T> clazz) {
+        try {
+            return objectMapper.readValue(exchange.getRequestBody(), clazz);
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Failed to convert JSON to object", e);
         }
     }
 }

@@ -31,4 +31,7 @@ public class Constants {
     public static final String GET_CLIENT_BY_ID = "SELECT id, name FROM client WHERE id = ?";
     public static final String SET_NEW_CLIENTS_NAME = "UPDATE client SET name = ? WHERE id = ?";
     public static final String DELETE_CLIENT_BY_ID = "DELETE FROM client WHERE id = ?";
+
+    // Port for HTTP server
+    public static final int DEFAULT_PORT = 9001;
 }

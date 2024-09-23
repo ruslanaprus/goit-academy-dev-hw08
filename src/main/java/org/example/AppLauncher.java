@@ -3,9 +3,13 @@ package org.example;
 import com.codahale.metrics.MetricRegistry;
 import org.example.constants.DatabaseType;
 import org.example.db.*;
+import org.example.formatter.JsonFormatter;
 import org.example.http.HttpServerFactory;
 import org.example.log.MetricsLogger;
 import org.example.service.*;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class AppLauncher {
 
@@ -17,12 +21,19 @@ public class AppLauncher {
         Database database = DatabaseFactory.createDatabase(dbType, metricRegistry);
         ConnectionManager connectionManager = ConnectionManager.getInstance(database, metricRegistry);
 
+        // Initialize services
         ClientService clientService = new ClientService(connectionManager, metricRegistry);
 
-        // Run CRUD operations
-        ClientOperations.performCrudOperations(clientService);
+        // Add services to a list
+        List<BaseService> services = new ArrayList<>();
+        services.add(clientService);
 
         // Start HTTP server
-        HttpServerFactory.startHttpServer(clientService);
+        JsonFormatter jsonFormatter = new JsonFormatter();
+        HttpServerFactory httpServerFactory = new HttpServerFactory(services, jsonFormatter);
+        httpServerFactory.startServer();
+
+        // Run CRUD operations (as needed)
+        ClientOperations.performCrudOperations(clientService);
     }
 }
