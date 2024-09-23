@@ -16,6 +16,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Consumer;
 
 public class SQLExecutor implements AutoCloseable {
     private static final Logger logger = LoggerFactory.getLogger(SQLExecutor.class);
@@ -120,6 +121,29 @@ public class SQLExecutor implements AutoCloseable {
         }
 
         return Optional.of(result);
+    }
+
+    public <T> Optional<T> executeSingleQuery(String query, String errorMessage, ResultSetMapper<T> mapper, Consumer<PreparedStatement> parameterSetter) {
+        Timer.Context context = metricRegistry.timer("sql-query-timer").time();
+
+        try (PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+            parameterSetter.accept(preparedStatement);
+            try (ResultSet rs = preparedStatement.executeQuery()) {
+                if (!rs.isBeforeFirst()) {
+                    return Optional.empty();
+                }
+                if (rs.next()) {
+                    return Optional.ofNullable(mapper.map(rs));
+                }
+            }
+        } catch (SQLException e) {
+            logger.error(errorMessage, e);
+            return Optional.empty();
+        } finally {
+            context.stop();
+        }
+
+        return Optional.empty();
     }
 
     @Override
