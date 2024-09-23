@@ -22,7 +22,7 @@ public class ClientOperations {
         logger.info("clientById={} is:", testId);
         Optional<Client> clientName = clientService.getById(testId);
         clientName.ifPresentOrElse(
-                name -> logger.info("Client name: {}", name),
+                name -> logger.info("Client: {}", name),
                 () -> logger.warn("No client found with ID: {}", testId)
         );
 
@@ -49,13 +49,23 @@ public class ClientOperations {
         int clientId = 7;
         String newName = "Kitten Mittens";
         logger.info("Updating client with ID {} to new name: {}", clientId, newName);
-       // clientService.setName(clientId, "Kitten Mittens");
+
+        Optional<Long> result = clientService.setName(clientId, newName);
+        result.ifPresentOrElse(
+                affectedRows -> logger.info("Client with ID {} successfully updated. Rows affected: {}", clientId, affectedRows),
+                () -> logger.warn("Failed to update client with ID {}", clientId)
+        );
     }
 
     private static void performDeleteOperations(ClientService clientService) {
         int deleteId = 6;
         logger.info("Deleting client with ID: {}", deleteId);
-      //  clientService.deleteById(deleteId);
+
+        Optional<Long> result = clientService.deleteById(deleteId);
+        result.ifPresentOrElse(
+                affectedRows -> logger.info("Client with ID {} successfully deleted. Rows affected: {}", deleteId, affectedRows),
+                () -> logger.warn("Failed to delete client with ID {}", deleteId)
+        );
     }
 }
 
