@@ -46,179 +46,6 @@ class ClientServiceTest {
         clientService = new ClientService(mockConnectionManager, mockMetricRegistry);
     }
 
-    // ---- Create Tests ----
-
-    @Test
-    void testCreate() throws SQLException {
-        when(mockConnection.prepareStatement(anyString(), anyInt())).thenReturn(mockPreparedStatement);
-        when(mockPreparedStatement.executeUpdate()).thenReturn(1);
-        when(mockPreparedStatement.getGeneratedKeys()).thenReturn(mockResultSet);
-        when(mockResultSet.next()).thenReturn(true);
-        when(mockResultSet.getLong(1)).thenReturn(100L);
-
-        long clientId = clientService.create("Test Client");
-
-        assertEquals(100L, clientId);
-        verify(mockPreparedStatement).setString(1, "Test Client");
-        verify(mockPreparedStatement).executeUpdate();
-    }
-
-    @Test
-    void testCreateNoRowsAffected() throws SQLException {
-        when(mockConnection.prepareStatement(anyString(), anyInt())).thenReturn(mockPreparedStatement);
-        when(mockPreparedStatement.executeUpdate()).thenReturn(0);
-
-        long clientId = clientService.create("Test Client");
-
-        assertEquals(-1, clientId);
-        verify(mockPreparedStatement).setString(1, "Test Client");
-        verify(mockPreparedStatement).executeUpdate();
-    }
-
-    @Test
-    void testCreateSQLException() throws SQLException {
-        when(mockConnection.prepareStatement(anyString(), anyInt())).thenReturn(mockPreparedStatement);
-        when(mockPreparedStatement.executeUpdate()).thenThrow(new SQLException());
-
-        long clientId = clientService.create("Test Client");
-
-        assertEquals(-1, clientId);
-    }
-
-    @Test
-    void testCreateInvalidName() throws SQLException {
-        long clientId = clientService.create(null);
-
-        assertEquals(-1, clientId);
-    }
-
-    // ---- GetById Tests ----
-
-    @Test
-    void testGetById() throws SQLException {
-        when(mockConnection.prepareStatement(anyString())).thenReturn(mockPreparedStatement);
-        when(mockPreparedStatement.executeQuery()).thenReturn(mockResultSet);
-        when(mockResultSet.next()).thenReturn(true);
-        when(mockResultSet.getString("name")).thenReturn("Test Client");
-
-        String clientName = clientService.getById(100L);
-
-        assertEquals("Test Client", clientName);
-        verify(mockPreparedStatement).setLong(1, 100L);
-        verify(mockPreparedStatement).executeQuery();
-    }
-
-    @Test
-    void testGetByIdNotFound() throws SQLException {
-        when(mockConnection.prepareStatement(anyString())).thenReturn(mockPreparedStatement);
-        when(mockPreparedStatement.executeQuery()).thenReturn(mockResultSet);
-        when(mockResultSet.next()).thenReturn(false);
-
-        String clientName = clientService.getById(100L);
-
-        assertNull(clientName);
-        verify(mockPreparedStatement).setLong(1, 100L);
-        verify(mockPreparedStatement).executeQuery();
-    }
-
-    @Test
-    void testGetByIdSQLException() throws SQLException {
-        when(mockConnection.prepareStatement(anyString())).thenReturn(mockPreparedStatement);
-        when(mockPreparedStatement.executeQuery()).thenThrow(new SQLException("Database error"));
-
-        String clientName = clientService.getById(100L);
-
-        assertNull(clientName);
-    }
-
-    // ---- SetName Tests ----
-
-    @Test
-    void testSetName() throws SQLException {
-        when(mockConnection.prepareStatement(anyString())).thenReturn(mockPreparedStatement);
-        when(mockPreparedStatement.executeUpdate()).thenReturn(1);
-
-        clientService.setName(100L, "Updated Client");
-
-        verify(mockPreparedStatement).setString(1, "Updated Client");
-        verify(mockPreparedStatement).setLong(2, 100L);
-        verify(mockPreparedStatement).executeUpdate();
-    }
-
-    @Test
-    void testSetNameNoRowsAffected() throws SQLException {
-        when(mockConnection.prepareStatement(anyString())).thenReturn(mockPreparedStatement);
-        when(mockPreparedStatement.executeUpdate()).thenReturn(0);
-
-        clientService.setName(100L, "Updated Client");
-
-        verify(mockPreparedStatement).setString(1, "Updated Client");
-        verify(mockPreparedStatement).setLong(2, 100L);
-        verify(mockPreparedStatement).executeUpdate();
-    }
-
-    @Test
-    void testSetNameSQLException() throws SQLException {
-        when(mockConnection.prepareStatement(anyString())).thenReturn(mockPreparedStatement);
-        when(mockPreparedStatement.executeUpdate()).thenThrow(new SQLException("Database error"));
-
-        clientService.setName(100L, "Updated Client");
-    }
-
-    @Test
-    void testSetNameInvalidName() {
-        clientService.setName(100L, null);
-    }
-
-    // ---- DeleteById Tests ----
-
-    @Test
-    void testDeleteById() throws SQLException {
-        when(mockConnection.prepareStatement(anyString())).thenReturn(mockPreparedStatement);
-        when(mockPreparedStatement.executeUpdate()).thenReturn(1);
-
-        clientService.deleteById(100L);
-
-        verify(mockPreparedStatement).setLong(1, 100L);
-        verify(mockPreparedStatement).executeUpdate();
-    }
-
-    @Test
-    void testDeleteByIdNoRowsAffected() throws SQLException {
-        when(mockConnection.prepareStatement(anyString())).thenReturn(mockPreparedStatement);
-        when(mockPreparedStatement.executeUpdate()).thenReturn(0);
-
-        clientService.deleteById(100L);
-
-        verify(mockPreparedStatement).setLong(1, 100L);
-        verify(mockPreparedStatement).executeUpdate();
-    }
-
-    @Test
-    void testDeleteByIdSQLException() throws SQLException {
-        when(mockConnection.prepareStatement(anyString())).thenReturn(mockPreparedStatement);
-        when(mockPreparedStatement.executeUpdate()).thenThrow(new SQLException("Database error"));
-
-        clientService.deleteById(100L);
-    }
-
-    // ---- ListAll Tests ----
-
-    @Test
-    void testListAllClients() throws SQLException {
-        when(mockConnection.prepareStatement(anyString())).thenReturn(mockPreparedStatement);
-        when(mockPreparedStatement.executeQuery()).thenReturn(mockResultSet);
-        when(mockResultSet.next()).thenReturn(true, true, false);
-        when(mockResultSet.getLong("id")).thenReturn(1L, 2L);
-        when(mockResultSet.getString("name")).thenReturn("Client A", "Client B");
-
-        var clients = clientService.listAll();
-
-        assertEquals(2, clients.size());
-        assertEquals("Client A", clients.get(0).getName());
-        assertEquals("Client B", clients.get(1).getName());
-    }
-
     @Test
     void testListAllNoClients() throws SQLException {
         when(mockConnection.prepareStatement(anyString())).thenReturn(mockPreparedStatement);
@@ -250,7 +77,7 @@ class ClientServiceTest {
         when(mockResultSet.next()).thenReturn(true);
         when(mockResultSet.getLong(1)).thenReturn(100L);
 
-        Optional<Client> result = clientService.createClient("Test Client");
+        Optional<Client> result = clientService.create("Test Client");
 
         assertTrue(result.isPresent());
         assertEquals(100L, result.get().getId());
@@ -265,7 +92,7 @@ class ClientServiceTest {
         when(mockConnection.prepareStatement(anyString(), anyInt())).thenReturn(mockPreparedStatement);
         when(mockPreparedStatement.executeUpdate()).thenReturn(0);
 
-        Optional<Client> result = clientService.createClient("Test Client");
+        Optional<Client> result = clientService.create("Test Client");
 
         assertFalse(result.isPresent());
 
@@ -277,14 +104,14 @@ class ClientServiceTest {
     void testCreateClientSQLException() throws SQLException {
         when(mockConnection.prepareStatement(anyString(), anyInt())).thenThrow(new SQLException("Database error"));
 
-        Optional<Client> result = clientService.createClient("Test Client");
+        Optional<Client> result = clientService.create("Test Client");
 
         assertFalse(result.isPresent());
     }
 
     @Test
     void testCreateClientInvalidName() {
-        Optional<Client> result = clientService.createClient(null);
+        Optional<Client> result = clientService.create(null);
 
         assertFalse(result.isPresent());
     }
@@ -298,7 +125,7 @@ class ClientServiceTest {
         when(mockResultSet.next()).thenReturn(true);
         when(mockResultSet.getString("name")).thenReturn("Test Client");
 
-        Optional<String> clientName = clientService.getClientById(100L);
+        Optional<String> clientName = clientService.getById(100L);
 
         assertTrue(clientName.isPresent());
         assertEquals("Test Client", clientName.get());
@@ -313,7 +140,7 @@ class ClientServiceTest {
         when(mockPreparedStatement.executeQuery()).thenReturn(mockResultSet);
         when(mockResultSet.next()).thenReturn(false);
 
-        Optional<String> clientName = clientService.getClientById(100L);
+        Optional<String> clientName = clientService.getById(100L);
 
         assertFalse(clientName.isPresent());
     }
@@ -322,7 +149,7 @@ class ClientServiceTest {
     void testGetClientByIdSQLException() throws SQLException {
         when(mockConnection.prepareStatement(anyString())).thenThrow(new SQLException("Database error"));
 
-        Optional<String> clientName = clientService.getClientById(100L);
+        Optional<String> clientName = clientService.getById(100L);
 
         assertFalse(clientName.isPresent());
     }
@@ -338,7 +165,7 @@ class ClientServiceTest {
         when(mockResultSet.getLong("id")).thenReturn(1L);
         when(mockResultSet.getString("name")).thenReturn("Test Client");
 
-        Optional<List<Client>> result = clientService.listAllClients();
+        Optional<List<Client>> result = clientService.listAll();
 
         assertTrue(result.isPresent());
         assertEquals(1, result.get().size());
@@ -352,7 +179,7 @@ class ClientServiceTest {
         when(mockPreparedStatement.executeQuery()).thenReturn(mockResultSet);
         when(mockResultSet.isBeforeFirst()).thenReturn(false);
 
-        Optional<List<Client>> result = clientService.listAllClients();
+        Optional<List<Client>> result = clientService.listAll();
 
         assertTrue(result.isEmpty());
         verify(mockPreparedStatement).executeQuery();
@@ -362,7 +189,7 @@ class ClientServiceTest {
     void testListAllClientsSQLException() throws SQLException {
         when(mockConnection.prepareStatement(anyString())).thenThrow(new SQLException("SQL Error"));
 
-        Optional<List<Client>> result = clientService.listAllClients();
+        Optional<List<Client>> result = clientService.listAll();
 
         assertTrue(result.isEmpty());
         verify(mockConnection).prepareStatement(anyString());

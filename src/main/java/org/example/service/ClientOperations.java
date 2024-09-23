@@ -25,14 +25,14 @@ public class ClientOperations {
 //        logger.info("clientById={} is {}", testId, clientService.getById(testId));
 
         logger.info("clientById={} is:", testId);
-        Optional<String> clientName = clientService.getClientById(testId);
+        Optional<String> clientName = clientService.getById(testId);
         clientName.ifPresentOrElse(
                 name -> logger.info("Client name: {}", name),
                 () -> logger.warn("No client found with ID: {}", testId)
         );
 
         logger.info("Listing all clients:");
-        clientService.listAllClients().ifPresentOrElse(
+        clientService.listAll().ifPresentOrElse(
                 clients -> {
                     logger.info("Client(s) found: {}", clients.size());
                     clients.forEach(client -> logger.info(client.toString()));
@@ -46,7 +46,7 @@ public class ClientOperations {
 //        clientService.create("Milky Meow Co.");
 
         logger.info("Creating a new client");
-        Optional<Client> result = clientService.createClient("Impawsible trails Inc.");
+        Optional<Client> result = clientService.create("Impawsible trails Inc.");
         result.ifPresentOrElse(
                 client -> logger.info("Client added with ID: {}", client.getId()),
                 () -> logger.warn("Client addition failed")

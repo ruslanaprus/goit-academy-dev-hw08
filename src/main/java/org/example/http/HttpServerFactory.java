@@ -1,6 +1,5 @@
 package org.example.http;
 
-import com.fasterxml.jackson.databind.ser.std.StdKeySerializers;
 import com.sun.net.httpserver.HttpServer;
 import org.example.formatter.JsonFormatter;
 import org.example.service.BaseService;
@@ -8,23 +7,23 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 import static org.example.constants.Constants.DEFAULT_PORT;
 
 public class HttpServerFactory {
     private static final Logger logger = LoggerFactory.getLogger(HttpServerFactory.class);
 
-    private final List<BaseService> services;
+    private final Map<String, BaseService> serviceMap;
     private final JsonFormatter jsonFormatter;
 
     public HttpServerFactory(List<BaseService> services, JsonFormatter jsonFormatter) {
-        this.services = services;
+        this.serviceMap = services.stream().collect(Collectors.toMap(BaseService::getContextPath, service -> service));
         this.jsonFormatter = jsonFormatter;
     }
 
@@ -43,23 +42,10 @@ public class HttpServerFactory {
     }
 
     private void setupContexts(HttpServer server) {
-        for (BaseService service : services) {
-            String contextPath = getContextPath(service);
-            if (contextPath != null) {
-                server.createContext(contextPath, new MyHttpServer(service, jsonFormatter));
-                logger.info("Context '{}' created for service '{}'", contextPath, service.getClass().getSimpleName());
-            }
-        }
-    }
-
-    private String getContextPath(BaseService service) {
-        try {
-            Method method = service.getClass().getMethod("getContextPath");
-            return (String) method.invoke(service);
-        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-            logger.error("Failed to retrieve context path for service: {}", service.getClass().getSimpleName(), e);
-            return null;
-        }
+        serviceMap.forEach((contextPath, service) -> {
+            server.createContext(contextPath, new MyHttpServer(serviceMap, jsonFormatter));
+            logger.info("Context '{}' created for service '{}'", contextPath, service.getClass().getSimpleName());
+        });
     }
 
     public void stopServer(HttpServer server) {

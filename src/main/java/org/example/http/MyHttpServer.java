@@ -6,17 +6,18 @@ import org.example.formatter.JsonFormatter;
 import org.example.service.BaseService;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import java.util.Optional;
 
 public class MyHttpServer implements HttpHandler {
-    private final BaseService service;
+
+    private final Map<String, BaseService> serviceMap;
     private final JsonFormatter jsonFormatter;
 
-    public MyHttpServer(BaseService service, JsonFormatter jsonFormatter) {
-        this.service = service;
+    public MyHttpServer(Map<String, BaseService> serviceMap, JsonFormatter jsonFormatter) {
+        this.serviceMap = serviceMap;
         this.jsonFormatter = jsonFormatter;
     }
 
@@ -24,115 +25,109 @@ public class MyHttpServer implements HttpHandler {
     public void handle(HttpExchange exchange) throws IOException {
         String method = exchange.getRequestMethod();
         String path = exchange.getRequestURI().getPath();
+        String context = extractContextFromPath(path);
+
+        BaseService service = serviceMap.get(context);
+        if (service == null) {
+            sendResponse(exchange, 404, "Service not found");
+            return;
+        }
+
         try {
             switch (method) {
-                case "GET":
-                    handleGetRequest(exchange, path);
-                    break;
-                case "POST":
-                    handlePostRequest(exchange);
-                    break;
-                case "PUT":
-                    handlePutRequest(exchange, path);
-                    break;
-                case "DELETE":
-                    handleDeleteRequest(exchange, path);
-                    break;
-                default:
-                    sendResponse(exchange, 405, "Method Not Allowed");
+                case "GET" -> handleGetRequest(exchange, service, path);
+                case "POST" -> handlePostRequest(exchange, service);
+                case "PUT" -> handlePutRequest(exchange, service, path);
+                case "DELETE" -> handleDeleteRequest(exchange, service, path);
+                default -> sendResponse(exchange, 405, "Method Not Allowed");
             }
         } catch (Exception e) {
             handleServerError(exchange, e);
         }
     }
 
-    // Handle GET request (Fetch by ID or list all)
-    private void handleGetRequest(HttpExchange exchange, String path) throws Exception {
-        String[] pathComponents = path.split("/");
+    private void handleGetRequest(HttpExchange exchange, BaseService service, String path) throws IOException {
+        Optional<Long> id = extractIdFromPath(path);
+        if (id.isPresent()) {
+            invokeMethod(exchange, service, "getById", new Class<?>[]{long.class}, new Object[]{id.get()});
+        } else {
+            invokeMethod(exchange, service, "listAll", new Class<?>[]{}, new Object[]{});
+        }
+    }
 
-        if (pathComponents.length == 3) {
-            long id = Long.parseLong(pathComponents[2]);
-            Method method = service.getClass().getMethod("getClientById", long.class);
-            Optional<?> result = (Optional<?>) method.invoke(service, id);
+    private void handlePostRequest(HttpExchange exchange, BaseService service) throws IOException {
+        Object entity = jsonFormatter.jsonToObject(exchange, service.getJsonEntityMapper());
+        invokeMethod(exchange, service, "create", new Class<?>[]{String.class}, new Object[]{getNameFromEntity(entity)});
+    }
+
+    private void handlePutRequest(HttpExchange exchange, BaseService service, String path) throws IOException {
+        Optional<Long> id = extractIdFromPath(path);
+        if (id.isPresent()) {
+            Object entity = jsonFormatter.jsonToObject(exchange, service.getJsonEntityMapper());
+            invokeMethod(exchange, service, "setName", new Class<?>[]{long.class, String.class}, new Object[]{id.get(), getNameFromEntity(entity)});
+        } else {
+            sendResponse(exchange, 400, "Invalid ID");
+        }
+    }
+
+    private void handleDeleteRequest(HttpExchange exchange, BaseService service, String path) throws IOException {
+        Optional<Long> id = extractIdFromPath(path);
+        if (id.isPresent()) {
+            invokeMethod(exchange, service, "deleteById", new Class<?>[]{long.class}, new Object[]{id.get()});
+        } else {
+            sendResponse(exchange, 400, "Invalid ID");
+        }
+    }
+
+    private void invokeMethod(HttpExchange exchange, BaseService service, String methodName, Class<?>[] paramTypes, Object[] params) throws IOException {
+        try {
+            Method method = service.getClass().getMethod(methodName, paramTypes);
+            Optional<?> result = (Optional<?>) method.invoke(service, params);
+
             if (result.isPresent()) {
-                sendResponse(exchange, 200, jsonFormatter.objectToJson(result.get()));
+                sendResponse(exchange, 200, jsonFormatter.objectToJson(result.get(), service.getJsonEntityMapper()));
             } else {
-                sendResponse(exchange, 404, "Resource not found");
+                sendResponse(exchange, 404, "Entity not found or operation failed");
             }
-        } else {
-            Method listMethod = service.getClass().getMethod("listAllClients");
-            Optional<?> result = (Optional<?>) listMethod.invoke(service);
-            if (result.isPresent()) {
-                sendResponse(exchange, 200, jsonFormatter.objectToJson(result.get()));
-            } else {
-                sendResponse(exchange, 404, "No resources found");
-            }
+        } catch (Exception e) {
+            handleServerError(exchange, e);
         }
     }
 
-    // Handle POST request (Create a new resource)
-    private void handlePostRequest(HttpExchange exchange) throws Exception {
-        Object requestBody = jsonFormatter.jsonToObject(exchange, service.getClass());
-        Method method = service.getClass().getMethod("createClient", requestBody.getClass());
-
-        Optional<?> result = (Optional<?>) method.invoke(service, requestBody);
-        if (result.isPresent()) {
-            sendResponse(exchange, 201, jsonFormatter.objectToJson(result.get()));
-        } else {
-            sendResponse(exchange, 400, "Failed to create resource");
-        }
-    }
-
-    // Handle PUT request (Update a resource by ID)
-    private void handlePutRequest(HttpExchange exchange, String path) throws Exception {
-        String[] pathComponents = path.split("/");
-
-        if (pathComponents.length == 3) {
-            long id = Long.parseLong(pathComponents[2]);
-            Object requestBody = jsonFormatter.jsonToObject(exchange, service.getClass());
-            Method method = service.getClass().getMethod("setClientName", long.class, requestBody.getClass());
-
-            Optional<Boolean> updateSuccess = (Optional<Boolean>) method.invoke(service, id, requestBody);
-            if (updateSuccess.isPresent() && updateSuccess.get()) {
-                sendResponse(exchange, 200, "Resource updated successfully");
-            } else {
-                sendResponse(exchange, 404, "Resource not found or update failed");
-            }
-        } else {
-            sendResponse(exchange, 400, "Bad Request");
-        }
-    }
-
-    // Handle DELETE request (Delete a resource by ID)
-    private void handleDeleteRequest(HttpExchange exchange, String path) throws Exception {
-        String[] pathComponents = path.split("/");
-
-        if (pathComponents.length == 3) {
-            long id = Long.parseLong(pathComponents[2]);
-            Method method = service.getClass().getMethod("deleteClientById", long.class);
-
-            Optional<Boolean> deleteSuccess = (Optional<Boolean>) method.invoke(service, id);
-            if (deleteSuccess.isPresent() && deleteSuccess.get()) {
-                sendResponse(exchange, 200, "Resource deleted successfully");
-            } else {
-                sendResponse(exchange, 404, "Resource not found or deletion failed");
-            }
-        } else {
-            sendResponse(exchange, 400, "Bad Request");
-        }
-    }
-
-    // Send the response to the client
-    private void sendResponse(HttpExchange exchange, int statusCode, String response) throws IOException {
-        exchange.sendResponseHeaders(statusCode, response.getBytes(StandardCharsets.UTF_8).length);
-        try (OutputStream os = exchange.getResponseBody()) {
-            os.write(response.getBytes(StandardCharsets.UTF_8));
-        }
-    }
-
-    // Handle server error
     private void handleServerError(HttpExchange exchange, Exception e) throws IOException {
-        String errorMessage = "Internal server error: " + e.getMessage();
-        sendResponse(exchange, 500, errorMessage);
+        sendResponse(exchange, 500, "Internal Server Error: " + e.getMessage());
+    }
+
+    private void sendResponse(HttpExchange exchange, int statusCode, String responseText) throws IOException {
+        byte[] responseBytes = responseText.getBytes(StandardCharsets.UTF_8);
+        exchange.sendResponseHeaders(statusCode, responseBytes.length);
+        exchange.getResponseBody().write(responseBytes);
+        exchange.close();
+    }
+
+    private Optional<Long> extractIdFromPath(String path) {
+        try {
+            String[] segments = path.split("/");
+            if (segments.length > 2) {
+                return Optional.of(Long.parseLong(segments[2]));
+            }
+        } catch (NumberFormatException e) {
+            return Optional.empty();
+        }
+        return Optional.empty();
+    }
+
+    private String extractContextFromPath(String path) {
+        String[] segments = path.split("/");
+        return segments.length > 1 ? "/" + segments[1] : "";
+    }
+
+    private String getNameFromEntity(Object entity) {
+        try {
+            Method getNameMethod = entity.getClass().getMethod("getName");
+            return (String) getNameMethod.invoke(entity);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to get name from entity", e);
+        }
     }
 }

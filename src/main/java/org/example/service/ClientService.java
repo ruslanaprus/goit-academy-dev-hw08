@@ -3,12 +3,13 @@ package org.example.service;
 import com.codahale.metrics.MetricRegistry;
 import org.example.db.ConnectionManager;
 import org.example.db.SQLExecutor;
+import org.example.mapper.ClientJsonMapper;
+import org.example.mapper.JsonEntityMapper;
 import org.example.model.Client;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.*;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -29,10 +30,14 @@ public class ClientService implements BaseService {
         return "/clients";
     }
 
+    public JsonEntityMapper getJsonEntityMapper() {
+        return new ClientJsonMapper();
+    }
+
     /**
      * Following methods are using Optional to provides a way of handling cases where data may be missing or the operation fails.
      */
-    public Optional<Client> createClient(String name) {
+    public Optional<Client> create(String name) {
 
         try {
             validateName(name);
@@ -63,7 +68,7 @@ public class ClientService implements BaseService {
         return Optional.empty();
     }
 
-    public Optional<String> getClientById(long id) {
+    public Optional<String> getById(long id) {
         Client client = new Client();
 
         try (Connection connection = connectionManager.getConnection();
@@ -85,7 +90,7 @@ public class ClientService implements BaseService {
         return Optional.empty();
     }
 
-    public Optional<List<Client>> listAllClients() {
+    public Optional<List<Client>> listAll() {
         String errorMessage = "Failed to execute findMaxSalaryWorker query";
 
         try (SQLExecutor executor = new SQLExecutor(connectionManager.getConnection(), metricRegistry)) {
@@ -97,7 +102,7 @@ public class ClientService implements BaseService {
         }
     }
 
-    public Optional<Boolean> setClientName(long id, String name) {
+    public Optional<Boolean> setName(long id, String name) {
         try {
             validateName(name);
             try (Connection connection = connectionManager.getConnection();
@@ -123,7 +128,7 @@ public class ClientService implements BaseService {
         return Optional.empty();
     }
 
-    public Optional<Boolean> deleteClientById(long id) {
+    public Optional<Boolean> deleteById(long id) {
         try (Connection connection = connectionManager.getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement(DELETE_CLIENT_BY_ID)) {
 
