@@ -4,10 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateSerializer;
-import com.sun.net.httpserver.HttpExchange;
 import org.example.model.Worker;
 
-import java.io.IOException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
@@ -27,7 +25,7 @@ public class WorkerJsonMapper implements JsonEntityMapper<Worker> {
         try {
             return objectMapper.readValue(json, Worker.class);
         } catch (Exception e) {
-            throw new RuntimeException("Failed to map JSON to Client", e);
+            throw new RuntimeException("Failed to map JSON to Worker", e);
         }
     }
 
@@ -36,7 +34,7 @@ public class WorkerJsonMapper implements JsonEntityMapper<Worker> {
         try {
             return objectMapper.writeValueAsString(worker);
         } catch (Exception e) {
-            throw new RuntimeException("Failed to map Client to JSON", e);
+            throw new RuntimeException("Failed to map Worker to JSON", e);
         }
     }
 }
