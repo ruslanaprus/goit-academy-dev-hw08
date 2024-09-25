@@ -77,7 +77,7 @@ class ClientServiceTest {
         when(mockResultSet.next()).thenReturn(true);
         when(mockResultSet.getLong(1)).thenReturn(100L);
 
-        Optional<Client> result = clientService.create("Test Client");
+        Optional<Client> result = clientService.create(new Client("Test Client"));
 
         assertTrue(result.isPresent());
         assertEquals(100L, result.get().getId());
@@ -92,7 +92,7 @@ class ClientServiceTest {
         when(mockConnection.prepareStatement(anyString(), anyInt())).thenReturn(mockPreparedStatement);
         when(mockPreparedStatement.executeUpdate()).thenReturn(0);
 
-        Optional<Client> result = clientService.create("Test Client");
+        Optional<Client> result = clientService.create(new Client("Test Client"));
 
         assertFalse(result.isPresent());
 
@@ -104,14 +104,14 @@ class ClientServiceTest {
     void testCreateClientSQLException() throws SQLException {
         when(mockConnection.prepareStatement(anyString(), anyInt())).thenThrow(new SQLException("Database error"));
 
-        Optional<Client> result = clientService.create("Test Client");
+        Optional<Client> result = clientService.create(new Client("Test Client"));
 
         assertFalse(result.isPresent());
     }
 
     @Test
     void testCreateClientInvalidName() {
-        Optional<Client> result = clientService.create(null);
+        Optional<Client> result = clientService.create(new Client(""));
 
         assertFalse(result.isPresent());
     }
