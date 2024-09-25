@@ -3,7 +3,10 @@ package org.example.http;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import org.example.formatter.JsonFormatter;
+import org.example.mapper.JsonEntityMapper;
 import org.example.service.BaseService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -14,6 +17,7 @@ import java.util.Optional;
 
 public class MyHttpServer implements HttpHandler {
 
+    private static final Logger logger = LoggerFactory.getLogger(MyHttpServer.class);
     private final Map<String, BaseService> serviceMap;
     private final JsonFormatter jsonFormatter;
 
@@ -68,9 +72,62 @@ public class MyHttpServer implements HttpHandler {
         }
     }
 
-    private void handlePostRequest(HttpExchange exchange, BaseService service) throws IOException {
-        Object entity = jsonFormatter.jsonToObject(exchange, service.getJsonEntityMapper());
-        invokeMethod(exchange, service, "create", new Class<?>[]{String.class}, new Object[]{getNameFromEntity(entity)});
+    // Handle POST request (Create a new resource)
+    private void handlePostRequest(HttpExchange exchange, BaseService service) throws Exception {
+        // Get the JsonEntityMapper from the service
+        JsonEntityMapper<?> mapper = service.getJsonEntityMapper();
+
+        // Use the jsonToObject method to deserialize the request body into the appropriate type
+        Object requestBody = jsonFormatter.jsonToObject(exchange, mapper);
+
+        // Log the request body using the mapper to convert it to JSON
+        logger.info("requestBody: {}", jsonFormatter.objectToJson(requestBody, (JsonEntityMapper<Object>) mapper));
+
+        // Dynamically find the 'create' method that matches the deserialized object's class
+        Method createMethod = findCreateMethod(service, requestBody.getClass());
+
+        if (createMethod == null) {
+            sendResponse(exchange, 400, "No suitable 'create' method found in service");
+            return;
+        }
+
+        logger.info("Found method: {}", createMethod.getName());
+
+        // Invoke the 'create' method on the service with the deserialized request body
+        Optional<?> result = (Optional<?>) createMethod.invoke(service, requestBody);
+
+        if (result.isPresent()) {
+            Object responseBody = result.get();
+
+            // Since BaseService doesn't have a mapper method for specific classes, we reuse the same mapper for responseBody
+            @SuppressWarnings("unchecked")
+            JsonEntityMapper<Object> responseMapper = (JsonEntityMapper<Object>) service.getJsonEntityMapper();
+
+            // Log the result using the same mapper
+            logger.info("result: {}", jsonFormatter.objectToJson(responseBody, responseMapper));
+
+            // Convert the result to JSON using the same mapper and send the response
+            sendResponse(exchange, 201, jsonFormatter.objectToJson(responseBody, responseMapper));
+        } else {
+            sendResponse(exchange, 400, "Failed to create resource");
+        }
+    }
+
+    /**
+     * Utility method to find the 'create' method in the service class that matches the deserialized request body type.
+     */
+    private Method findCreateMethod(BaseService service, Class<?> requestBodyClass) {
+        // Iterate over all declared methods in the service class
+        for (Method method : service.getClass().getDeclaredMethods()) {
+            // Check if the method name is 'create' and it has exactly one parameter
+            if (method.getName().equals("create") && method.getParameterCount() == 1) {
+                // Check if the parameter type matches the requestBodyClass
+                if (method.getParameterTypes()[0].isAssignableFrom(requestBodyClass)) {
+                    return method;
+                }
+            }
+        }
+        return null;
     }
 
     private void handlePutRequest(HttpExchange exchange, BaseService service, String path) throws IOException {
