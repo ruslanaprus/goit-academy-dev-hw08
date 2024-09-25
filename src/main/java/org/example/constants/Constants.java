@@ -39,6 +39,13 @@ public class Constants {
     public static final String SET_NEW_WORKERS_NAME = "UPDATE worker SET name = ? WHERE id = ?";
     public static final String DELETE_WORKER_BY_ID = "DELETE FROM worker WHERE id = ?";
 
+    // CRUD for Projects table
+    public static final String LIST_ALL_PROJECTS = "SELECT id, name, client_id, start_date, finish_date FROM project LIMIT 50";
+    public static final String INSERT_INTO_PROJECTS = "INSERT INTO project (name, client_id, start_date, finish_date) VALUES (?, ?, ?, ?)";
+    public static final String GET_PROJECT_BY_ID = "SELECT id, name, client_id, start_date, finish_date FROM project WHERE id = ?";
+    public static final String SET_NEW_PROJECTS_NAME = "UPDATE project SET name = ? WHERE id = ?";
+    public static final String DELETE_PROJECT_BY_ID = "DELETE FROM project WHERE id = ?";
+
     // Port for HTTP server
     public static final int DEFAULT_PORT = 9001;
 }

@@ -17,7 +17,7 @@ public class ProjectMapper implements EntityMapper<Project> {
         String dbName = connection.getMetaData().getDatabaseProductName();
 
         statement.setString(1, project.getName());
-        statement.setInt(2, project.getClient_id());
+        statement.setLong(2, project.getClient_id());
 
         if (dbName.equalsIgnoreCase("PostgreSQL")) {
             statement.setDate(3, Date.valueOf(project.getStart_date()));

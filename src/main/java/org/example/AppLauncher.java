@@ -24,11 +24,13 @@ public class AppLauncher {
         // Initialize services
         ClientService clientService = new ClientService(connectionManager, metricRegistry);
         WorkerService workerService = new WorkerService(connectionManager, metricRegistry);
+        ProjectService projectService = new ProjectService(connectionManager, metricRegistry);
 
         // Add services to a list
         List<BaseService> services = new ArrayList<>();
         services.add(clientService);
         services.add(workerService);
+        services.add(projectService);
 
         // Start HTTP server
         JsonFormatter jsonFormatter = new JsonFormatter();
