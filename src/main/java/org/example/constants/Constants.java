@@ -46,6 +46,4 @@ public class Constants {
     public static final String SET_NEW_PROJECTS_NAME = "UPDATE project SET name = ? WHERE id = ?";
     public static final String DELETE_PROJECT_BY_ID = "DELETE FROM project WHERE id = ?";
 
-    // Port for HTTP server
-    public static final int DEFAULT_PORT = 9001;
 }

@@ -14,10 +14,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
-import static org.example.constants.Constants.DEFAULT_PORT;
-
 public class HttpServerFactory {
     private static final Logger logger = LoggerFactory.getLogger(HttpServerFactory.class);
+    private static final int DEFAULT_PORT = 9001;
 
     private final Map<String, BaseService<?>> serviceMap;
     private final JsonFormatter jsonFormatter;
