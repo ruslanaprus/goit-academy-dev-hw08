@@ -2,6 +2,7 @@ package org.example.service;
 
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
+import org.example.crud.ClientService;
 import org.example.db.ConnectionManager;
 import org.example.model.Client;
 import org.junit.jupiter.api.BeforeEach;

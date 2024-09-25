@@ -1,6 +1,7 @@
 package org.example.service;
 
 import com.codahale.metrics.MetricRegistry;
+import org.example.crud.ClientService;
 import org.example.db.ConnectionManager;
 
 public class DatabaseServiceFactory {

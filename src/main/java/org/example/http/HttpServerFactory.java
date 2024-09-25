@@ -2,7 +2,7 @@ package org.example.http;
 
 import com.sun.net.httpserver.HttpServer;
 import org.example.formatter.JsonFormatter;
-import org.example.service.BaseService;
+import org.example.crud.BaseService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

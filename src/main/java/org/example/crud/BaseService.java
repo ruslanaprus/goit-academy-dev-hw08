@@ -1,4 +1,4 @@
-package org.example.service;
+package org.example.crud;
 
 import org.example.mapper.JsonEntityMapper;
 

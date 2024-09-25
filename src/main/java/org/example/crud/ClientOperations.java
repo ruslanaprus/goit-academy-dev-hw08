@@ -1,4 +1,4 @@
-package org.example.service;
+package org.example.crud;
 
 import org.example.model.Client;
 import org.slf4j.Logger;

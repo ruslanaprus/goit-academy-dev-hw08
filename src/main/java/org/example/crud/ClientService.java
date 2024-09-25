@@ -1,4 +1,4 @@
-package org.example.service;
+package org.example.crud;
 
 import com.codahale.metrics.MetricRegistry;
 import org.example.db.ConnectionManager;
