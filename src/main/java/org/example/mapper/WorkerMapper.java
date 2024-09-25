@@ -25,7 +25,7 @@ public class WorkerMapper implements EntityMapper<Worker> {
         }
 
         statement.setString(3, worker.getEmail());
-        statement.setString(4, worker.getLevel().name().toLowerCase());
+        statement.setString(4, worker.getLevel().toString());
         statement.setInt(5, worker.getSalary());
     }
 }
