@@ -1,10 +1,10 @@
 package org.example.model;
 
 public enum Level {
-    TRAINEE("TRAINEE"),
-    JUNIOR("JUNIOR"),
-    MIDDLE("MIDDLE"),
-    SENIOR("SENIOR");
+    TRAINEE("Trainee"),
+    JUNIOR("Junior"),
+    MIDDLE("Middle"),
+    SENIOR("Senior");
 
     private final String displayName;
 

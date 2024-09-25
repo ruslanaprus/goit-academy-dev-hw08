@@ -7,6 +7,8 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateSerializer;
 import com.sun.net.httpserver.HttpExchange;
 import org.example.mapper.JsonEntityMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -16,6 +18,8 @@ import java.util.List;
 import java.util.Scanner;
 
 public class JsonFormatter {
+    private static final Logger logger = LoggerFactory.getLogger(JsonFormatter.class);
+
     private static final ObjectMapper objectMapper = new ObjectMapper();
     private static final JavaTimeModule module = new JavaTimeModule();
     private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
@@ -28,38 +32,66 @@ public class JsonFormatter {
 
     // Generic method to convert JSON to an object using the appropriate JsonEntityMapper
     public <T> T jsonToObject(HttpExchange exchange, JsonEntityMapper<T> mapper) {
-        String json = new Scanner(exchange.getRequestBody(), StandardCharsets.UTF_8).useDelimiter("\\A").next();
-        return mapper.fromJson(json);
+        logger.info("Converting JSON from HTTP exchange to object");
+        String json;
+        try (Scanner scanner = new Scanner(exchange.getRequestBody(), StandardCharsets.UTF_8)) {
+            json = scanner.useDelimiter("\\A").next();
+            logger.debug("Received JSON: {}", json);
+            return mapper.fromJson(json);
+        } catch (Exception e) {
+            logger.error("Failed to convert JSON from HTTP exchange to object", e);
+            throw new RuntimeException("Error parsing JSON request", e);
+        }
     }
 
     // Generic method to convert an object to JSON using the appropriate JsonEntityMapper
     public <T> String objectToJson(T obj, JsonEntityMapper<T> mapper) {
-        return mapper.toJson(obj);
+        logger.info("Converting object to JSON using custom mapper: {}", obj);
+        try {
+            String json = mapper.toJson(obj);
+            logger.debug("Converted object to JSON: {}", json);
+            return json;
+        } catch (Exception e) {
+            logger.error("Failed to convert object to JSON using custom mapper", e);
+            throw new RuntimeException("Error serializing object to JSON", e);
+        }
     }
 
     // Convert an object to JSON (for single objects)
     public <T> String objectToJson(T obj) {
+        logger.info("Converting object to JSON: {}", obj);
         try {
-            return objectMapper.writeValueAsString(obj);
+            String json = objectMapper.writeValueAsString(obj);
+            logger.debug("Converted object to JSON: {}", json);
+            return json;
         } catch (JsonProcessingException e) {
+            logger.error("Failed to convert object to JSON", e);
             throw new RuntimeException("Failed to convert object to JSON", e);
         }
     }
 
     // Convert a list of objects to JSON (for lists of objects)
     public <T> String objectToJson(List<T> list) {
+        logger.info("Converting list of objects to JSON, size: {}", list.size());
         try {
-            return objectMapper.writeValueAsString(list);
+            String json = objectMapper.writeValueAsString(list);
+            logger.debug("Converted list of objects to JSON: {}", json);
+            return json;
         } catch (JsonProcessingException e) {
+            logger.error("Failed to convert list of objects to JSON", e);
             throw new RuntimeException("Failed to convert list of objects to JSON", e);
         }
     }
 
     // Convert JSON to an object of the given class
     public <T> T jsonToObject(HttpExchange exchange, Class<T> clazz) {
+        logger.info("Converting JSON from HTTP exchange to object of type {}", clazz.getSimpleName());
         try {
-            return objectMapper.readValue(exchange.getRequestBody(), clazz);
+            T obj = objectMapper.readValue(exchange.getRequestBody(), clazz);
+            logger.debug("Converted JSON to object: {}", obj);
+            return obj;
         } catch (IOException e) {
+            logger.error("Failed to convert JSON to object of type {}", clazz.getSimpleName(), e);
             throw new RuntimeException("Failed to convert JSON to object", e);
         }
     }
