@@ -18,7 +18,7 @@ import java.util.Optional;
 public class MyHttpServer implements HttpHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(MyHttpServer.class);
-    private final Map<String, BaseService<?>> serviceMap;  // Use wildcard for services to handle various entity types
+    private final Map<String, BaseService<?>> serviceMap;
     private final JsonFormatter jsonFormatter;
 
     public MyHttpServer(Map<String, BaseService<?>> serviceMap, JsonFormatter jsonFormatter) {
@@ -32,8 +32,11 @@ public class MyHttpServer implements HttpHandler {
         String path = exchange.getRequestURI().getPath();
         String context = extractContextFromPath(path);
 
-        BaseService<?> service = serviceMap.get(context);  // Fetch the correct service based on context
+        logger.info("Received {} request for path: {}", method, path);
+
+        BaseService<?> service = serviceMap.get(context);
         if (service == null) {
+            logger.warn("Service not found for path: {}", context);
             sendResponse(exchange, 404, "Service not found");
             return;
         }
@@ -44,9 +47,13 @@ public class MyHttpServer implements HttpHandler {
                 case "POST" -> handlePostRequest(exchange, service);
                 case "PUT" -> handlePutRequest(exchange, service, path);
                 case "DELETE" -> handleDeleteRequest(exchange, service, path);
-                default -> sendResponse(exchange, 405, "Method Not Allowed");
+                default -> {
+                    logger.warn("Unsupported method: {}", method);
+                    sendResponse(exchange, 405, "Method Not Allowed");
+                }
             }
         } catch (Exception e) {
+            logger.error("Error processing request", e);
             handleServerError(exchange, e);
         }
     }
@@ -56,18 +63,22 @@ public class MyHttpServer implements HttpHandler {
 
         try {
             if (id.isPresent()) {
+                logger.info("Fetching resource by ID: {}", id.get());
                 invokeMethod(exchange, service, "getById", new Class<?>[]{long.class}, new Object[]{id.get()});
             } else {
+                logger.info("Fetching all resources for service: {}", service.getClass().getSimpleName());
                 Method listMethod = service.getClass().getMethod("listAll");
                 Optional<?> result = (Optional<?>) listMethod.invoke(service);
 
                 if (result.isPresent()) {
                     sendJsonResponse(exchange, 200, jsonFormatter.objectToJson(result.get()));
                 } else {
+                    logger.warn("No resources found for service: {}", service.getClass().getSimpleName());
                     sendResponse(exchange, 404, "No resources found");
                 }
             }
         } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+            logger.error("Failed to handle GET request", e);
             throw new RuntimeException("Failed to handle GET request", e);
         }
     }
@@ -75,12 +86,12 @@ public class MyHttpServer implements HttpHandler {
     private void handlePostRequest(HttpExchange exchange, BaseService<?> service) throws Exception {
         JsonEntityMapper<?> mapper = service.getJsonEntityMapper();
         Object requestBody = jsonFormatter.jsonToObject(exchange, mapper);
-        logger.info("requestBody: {}", jsonFormatter.objectToJson(requestBody));
+        logger.info("POST request received. Body: {}", jsonFormatter.objectToJson(requestBody));
 
         Method createMethod = findCreateMethod(service, requestBody.getClass());
-        logger.info("createMethod: {}", createMethod);
 
         if (createMethod == null) {
+            logger.warn("No suitable 'create' method found in service: {}", service.getClass().getSimpleName());
             sendResponse(exchange, 400, "No suitable 'create' method found in service");
             return;
         }
@@ -89,14 +100,10 @@ public class MyHttpServer implements HttpHandler {
 
         if (result.isPresent()) {
             Object responseBody = result.get();
-
-            @SuppressWarnings("unchecked")
-            JsonEntityMapper<Object> responseMapper = (JsonEntityMapper<Object>) service.getJsonEntityMapper();
-
-            logger.info("result: {}", jsonFormatter.objectToJson(responseBody));
-
-            sendJsonResponse(exchange, 201, jsonFormatter.objectToJson(responseBody, responseMapper));
+            logger.info("Resource created: {}", jsonFormatter.objectToJson(responseBody));
+            sendJsonResponse(exchange, 201, jsonFormatter.objectToJson(responseBody));
         } else {
+            logger.warn("Failed to create resource for service: {}", service.getClass().getSimpleName());
             sendResponse(exchange, 400, "Failed to create resource");
         }
     }
@@ -125,6 +132,7 @@ public class MyHttpServer implements HttpHandler {
                         String newName = requestBodyMap.get("name");
 
                         if (newName == null || newName.isEmpty()) {
+                            logger.warn("PUT request missing 'name' field for ID: {}", id);
                             sendResponse(exchange, 400, "Name field is required");
                             return;
                         }
@@ -133,20 +141,24 @@ public class MyHttpServer implements HttpHandler {
                                 .invoke(service, id, newName);
 
                         result.map(affectedRows -> {
+                            logger.info("Updated {} rows for ID: {}", affectedRows, id);
                             sendResponse(exchange, 200, "Updated rows: " + affectedRows);
                             return affectedRows;
                         }).orElseGet(() -> {
+                            logger.warn("No rows updated for ID: {}", id);
                             sendResponse(exchange, 404, "Entity not found or no rows updated");
                             return 0L;
                         });
 
                     } catch (ReflectiveOperationException e) {
+                        logger.error("Error updating entity with ID: {}", id, e);
                         handleServerError(exchange, e);
-                    } catch (RuntimeException e) {
-                        sendResponse(exchange, 400, "Invalid request body: " + e.getMessage());
                     }
                 },
-                () -> sendResponse(exchange, 400, "Invalid or missing ID")
+                () -> {
+                    logger.warn("Invalid or missing ID in PUT request");
+                    sendResponse(exchange, 400, "Invalid or missing ID");
+                }
         );
     }
 
@@ -158,18 +170,24 @@ public class MyHttpServer implements HttpHandler {
                                 .invoke(service, id);
 
                         result.map(affectedRows -> {
+                            logger.info("Deleted {} rows for ID: {}", affectedRows, id);
                             sendResponse(exchange, 200, "Deleted rows: " + affectedRows);
                             return affectedRows;
                         }).orElseGet(() -> {
+                            logger.warn("No rows deleted for ID: {}", id);
                             sendResponse(exchange, 404, "Entity not found or no rows deleted");
                             return 0L;
                         });
 
                     } catch (ReflectiveOperationException e) {
+                        logger.error("Error deleting entity with ID: {}", id, e);
                         handleServerError(exchange, e);
                     }
                 },
-                () -> sendResponse(exchange, 400, "Invalid ID")
+                () -> {
+                    logger.warn("Invalid ID in DELETE request");
+                    sendResponse(exchange, 400, "Invalid ID");
+                }
         );
     }
 
@@ -179,16 +197,20 @@ public class MyHttpServer implements HttpHandler {
             Optional<?> result = (Optional<?>) method.invoke(service, params);
 
             if (result.isPresent()) {
+                logger.info("{} method executed successfully", methodName);
                 sendJsonResponse(exchange, 200, jsonFormatter.objectToJson(result.get(), service.getJsonEntityMapper()));
             } else {
+                logger.warn("{} method failed or entity not found", methodName);
                 sendResponse(exchange, 404, "Entity not found or operation failed");
             }
         } catch (Exception e) {
+            logger.error("Error executing method: {}", methodName, e);
             handleServerError(exchange, e);
         }
     }
 
     private void handleServerError(HttpExchange exchange, Exception e) {
+        logger.error("Internal server error", e);
         sendResponse(exchange, 500, "Internal Server Error: " + e.getMessage());
     }
 
@@ -196,8 +218,9 @@ public class MyHttpServer implements HttpHandler {
         try {
             exchange.sendResponseHeaders(statusCode, response.getBytes(StandardCharsets.UTF_8).length);
             exchange.getResponseBody().write(response.getBytes(StandardCharsets.UTF_8));
+            logger.info("Response sent with status code: {}", statusCode);
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("Error sending response", e);
         } finally {
             exchange.close();
         }
@@ -214,7 +237,7 @@ public class MyHttpServer implements HttpHandler {
             try {
                 return Optional.of(Long.parseLong(segments[2]));
             } catch (NumberFormatException e) {
-                return Optional.empty();
+                logger.warn("Failed to parse ID from path: {}", path);
             }
         }
         return Optional.empty();
