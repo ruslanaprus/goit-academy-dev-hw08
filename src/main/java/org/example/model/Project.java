@@ -27,6 +27,8 @@ public class Project {
         this.finish_date = finish_date;
     }
 
+    public long getId() {return id;}
+
     public String getName() {
         return name;
     }
