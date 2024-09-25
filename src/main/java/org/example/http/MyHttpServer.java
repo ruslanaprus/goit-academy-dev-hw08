@@ -58,7 +58,7 @@ public class MyHttpServer implements HttpHandler {
                 Optional<?> result = (Optional<?>) listMethod.invoke(service);
 
                 if (result.isPresent()) {
-                    sendResponse(exchange, 200, jsonFormatter.objectToJson(result.get()));
+                    sendJsonResponse(exchange, 200, jsonFormatter.objectToJson(result.get()));
                 } else {
                     sendResponse(exchange, 404, "No resources found");
                 }
@@ -135,7 +135,7 @@ public class MyHttpServer implements HttpHandler {
             Optional<?> result = (Optional<?>) method.invoke(service, params);
 
             if (result.isPresent()) {
-                sendResponse(exchange, 200, jsonFormatter.objectToJson(result.get(), service.getJsonEntityMapper()));
+                sendJsonResponse(exchange, 200, jsonFormatter.objectToJson(result.get(), service.getJsonEntityMapper()));
             } else {
                 sendResponse(exchange, 404, "Entity not found or operation failed");
             }
@@ -148,29 +148,30 @@ public class MyHttpServer implements HttpHandler {
         sendResponse(exchange, 500, "Internal Server Error: " + e.getMessage());
     }
 
-    private void sendResponse(HttpExchange exchange, int statusCode, String responseText) {
-        byte[] responseBytes = responseText.getBytes(StandardCharsets.UTF_8);
+    private void sendResponse(HttpExchange exchange, int statusCode, String response) {
         try {
-            exchange.sendResponseHeaders(statusCode, responseBytes.length);
+            exchange.sendResponseHeaders(statusCode, response.getBytes(StandardCharsets.UTF_8).length);
+            exchange.getResponseBody().write(response.getBytes(StandardCharsets.UTF_8));
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            e.printStackTrace();
+        } finally {
+            exchange.close();
         }
-        try {
-            exchange.getResponseBody().write(responseBytes);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        exchange.close();
+    }
+
+    private void sendJsonResponse(HttpExchange exchange, int statusCode, String jsonResponse) {
+        exchange.getResponseHeaders().set("Content-Type", "application/json");
+        sendResponse(exchange, statusCode, jsonResponse);
     }
 
     private Optional<Long> extractIdFromPath(String path) {
-        try {
-            String[] segments = path.split("/");
-            if (segments.length > 2) {
+        String[] segments = path.split("/");
+        if (segments.length > 2) {
+            try {
                 return Optional.of(Long.parseLong(segments[2]));
+            } catch (NumberFormatException e) {
+                return Optional.empty();
             }
-        } catch (NumberFormatException e) {
-            return Optional.empty();
         }
         return Optional.empty();
     }
@@ -184,8 +185,8 @@ public class MyHttpServer implements HttpHandler {
         try {
             Method getNameMethod = entity.getClass().getMethod("getName");
             return (String) getNameMethod.invoke(entity);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to get name from entity", e);
+        } catch (ReflectiveOperationException e) {
+            throw new RuntimeException("Failed to extract name from entity", e);
         }
     }
 }
