@@ -19,10 +19,10 @@ import static org.example.constants.Constants.DEFAULT_PORT;
 public class HttpServerFactory {
     private static final Logger logger = LoggerFactory.getLogger(HttpServerFactory.class);
 
-    private final Map<String, BaseService> serviceMap;
+    private final Map<String, BaseService<?>> serviceMap;
     private final JsonFormatter jsonFormatter;
 
-    public HttpServerFactory(List<BaseService> services, JsonFormatter jsonFormatter) {
+    public HttpServerFactory(List<BaseService<?>> services, JsonFormatter jsonFormatter) {
         this.serviceMap = services.stream().collect(Collectors.toMap(BaseService::getContextPath, service -> service));
         this.jsonFormatter = jsonFormatter;
     }

@@ -2,9 +2,9 @@ package org.example.http;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
+import org.example.crud.BaseService;
 import org.example.formatter.JsonFormatter;
 import org.example.mapper.JsonEntityMapper;
-import org.example.crud.BaseService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,10 +18,10 @@ import java.util.Optional;
 public class MyHttpServer implements HttpHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(MyHttpServer.class);
-    private final Map<String, BaseService> serviceMap;
+    private final Map<String, BaseService<?>> serviceMap;  // Use wildcard for services to handle various entity types
     private final JsonFormatter jsonFormatter;
 
-    public MyHttpServer(Map<String, BaseService> serviceMap, JsonFormatter jsonFormatter) {
+    public MyHttpServer(Map<String, BaseService<?>> serviceMap, JsonFormatter jsonFormatter) {
         this.serviceMap = serviceMap;
         this.jsonFormatter = jsonFormatter;
     }
@@ -32,7 +32,7 @@ public class MyHttpServer implements HttpHandler {
         String path = exchange.getRequestURI().getPath();
         String context = extractContextFromPath(path);
 
-        BaseService service = serviceMap.get(context);
+        BaseService<?> service = serviceMap.get(context);  // Fetch the correct service based on context
         if (service == null) {
             sendResponse(exchange, 404, "Service not found");
             return;
@@ -51,7 +51,7 @@ public class MyHttpServer implements HttpHandler {
         }
     }
 
-    private void handleGetRequest(HttpExchange exchange, BaseService service, String path) throws IOException {
+    private void handleGetRequest(HttpExchange exchange, BaseService<?> service, String path) throws IOException {
         Optional<Long> id = extractIdFromPath(path);
 
         try {
@@ -72,12 +72,13 @@ public class MyHttpServer implements HttpHandler {
         }
     }
 
-    private void handlePostRequest(HttpExchange exchange, BaseService service) throws Exception {
+    private void handlePostRequest(HttpExchange exchange, BaseService<?> service) throws Exception {
         JsonEntityMapper<?> mapper = service.getJsonEntityMapper();
         Object requestBody = jsonFormatter.jsonToObject(exchange, mapper);
-        logger.info("requestBody: {}", jsonFormatter.objectToJson(requestBody, (JsonEntityMapper<Object>) mapper));
+        logger.info("requestBody: {}", jsonFormatter.objectToJson(requestBody));
 
         Method createMethod = findCreateMethod(service, requestBody.getClass());
+        logger.info("createMethod: {}", createMethod);
 
         if (createMethod == null) {
             sendResponse(exchange, 400, "No suitable 'create' method found in service");
@@ -89,11 +90,10 @@ public class MyHttpServer implements HttpHandler {
         if (result.isPresent()) {
             Object responseBody = result.get();
 
-            // Since BaseService doesn't have a mapper method for specific classes, we reuse the same mapper for responseBody
             @SuppressWarnings("unchecked")
             JsonEntityMapper<Object> responseMapper = (JsonEntityMapper<Object>) service.getJsonEntityMapper();
 
-            logger.info("result: {}", jsonFormatter.objectToJson(responseBody, responseMapper));
+            logger.info("result: {}", jsonFormatter.objectToJson(responseBody));
 
             sendJsonResponse(exchange, 201, jsonFormatter.objectToJson(responseBody, responseMapper));
         } else {
@@ -101,23 +101,23 @@ public class MyHttpServer implements HttpHandler {
         }
     }
 
-    /**
-     * Utility method to find the 'create' method in the service class that matches the deserialized request body type.
-     */
-    private Method findCreateMethod(BaseService service, Class<?> requestBodyClass) {
-        // Iterate over all declared methods in the service class
-        for (Method method : service.getClass().getDeclaredMethods()) {
-            if (method.getName().equals("create") && method.getParameterCount() == 1) {
-                // Check if the parameter type matches the requestBodyClass
-                if (method.getParameterTypes()[0].isAssignableFrom(requestBodyClass)) {
-                    return method;
+    private Method findCreateMethod(BaseService<?> service, Class<?> requestBodyClass) {
+        Class<?> currentClass = service.getClass();
+
+        while (currentClass != null) {
+            for (Method method : currentClass.getDeclaredMethods()) {
+                if (method.getName().equals("create") && method.getParameterCount() == 1) {
+                    if (method.getParameterTypes()[0].isAssignableFrom(requestBodyClass)) {
+                        return method;
+                    }
                 }
             }
+            currentClass = currentClass.getSuperclass();
         }
         return null;
     }
 
-    private void handlePutRequest(HttpExchange exchange, BaseService service, String path) throws IOException {
+    private void handlePutRequest(HttpExchange exchange, BaseService<?> service, String path) throws IOException {
         extractIdFromPath(path).ifPresentOrElse(
                 id -> {
                     try {
@@ -150,7 +150,7 @@ public class MyHttpServer implements HttpHandler {
         );
     }
 
-    private void handleDeleteRequest(HttpExchange exchange, BaseService service, String path) throws IOException {
+    private void handleDeleteRequest(HttpExchange exchange, BaseService<?> service, String path) throws IOException {
         extractIdFromPath(path).ifPresentOrElse(
                 id -> {
                     try {
@@ -173,7 +173,7 @@ public class MyHttpServer implements HttpHandler {
         );
     }
 
-    private void invokeMethod(HttpExchange exchange, BaseService service, String methodName, Class<?>[] paramTypes, Object[] params) throws IOException {
+    private void invokeMethod(HttpExchange exchange, BaseService<?> service, String methodName, Class<?>[] paramTypes, Object[] params) throws IOException {
         try {
             Method method = service.getClass().getMethod(methodName, paramTypes);
             Optional<?> result = (Optional<?>) method.invoke(service, params);
@@ -223,14 +223,5 @@ public class MyHttpServer implements HttpHandler {
     private String extractContextFromPath(String path) {
         String[] segments = path.split("/");
         return segments.length > 1 ? "/" + segments[1] : "";
-    }
-
-    private String getNameFromEntity(Object entity) {
-        try {
-            Method getNameMethod = entity.getClass().getMethod("getName");
-            return (String) getNameMethod.invoke(entity);
-        } catch (ReflectiveOperationException e) {
-            throw new RuntimeException("Failed to extract name from entity", e);
-        }
     }
 }

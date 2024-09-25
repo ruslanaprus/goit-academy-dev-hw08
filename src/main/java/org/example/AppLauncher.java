@@ -27,7 +27,7 @@ public class AppLauncher {
         ProjectService projectService = new ProjectService(connectionManager, metricRegistry);
 
         // Add services to a list
-        List<BaseService> services = new ArrayList<>();
+        List<BaseService<?>> services = new ArrayList<>();
         services.add(clientService);
         services.add(workerService);
         services.add(projectService);
