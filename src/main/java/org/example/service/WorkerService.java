@@ -18,7 +18,7 @@ import java.util.Optional;
 import static org.example.constants.Constants.*;
 
 public class WorkerService implements BaseService {
-    private static final Logger logger = LoggerFactory.getLogger(ClientService.class);
+    private static final Logger logger = LoggerFactory.getLogger(WorkerService.class);
     private final ConnectionManager connectionManager;
     private final MetricRegistry metricRegistry;
 
