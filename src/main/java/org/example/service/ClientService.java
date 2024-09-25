@@ -37,22 +37,21 @@ public class ClientService implements BaseService {
     /**
      * Following methods are using Optional to provides a way of handling cases where data may be missing or the operation fails.
      */
-    public Optional<Client> create(String name) {
-
+    public Optional<Client> create(Client client) {
         try {
-            validateName(name);
+            validateName(client.getName());
             try (Connection connection = connectionManager.getConnection();
                  PreparedStatement statement = connection.prepareStatement(INSERT_INTO_CLIENTS, Statement.RETURN_GENERATED_KEYS)) {
 
-                statement.setString(1, name);
+                statement.setString(1, client.getName());
                 int affectedRows = statement.executeUpdate();
 
                 if (affectedRows > 0) {
                     try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
                         if (generatedKeys.next()) {
                             long generatedId = generatedKeys.getLong(1);
-                            Client client = new Client(generatedId, name);
-                            return Optional.of(client);
+                            Client newClient = new Client(generatedId, client.getName());
+                            return Optional.of(newClient);
                         }
                     }
                 } else {

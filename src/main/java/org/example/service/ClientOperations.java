@@ -38,7 +38,7 @@ public class ClientOperations {
 
     private static void performCreateOperations(ClientService clientService) {
         logger.info("Creating a new client");
-        Optional<Client> result = clientService.create("Impawsible trails Inc.");
+        Optional<Client> result = clientService.create(new Client("Impawsible trails Inc."));
         result.ifPresentOrElse(
                 client -> logger.info("Client added with ID: {}", client.getId()),
                 () -> logger.warn("Client addition failed")

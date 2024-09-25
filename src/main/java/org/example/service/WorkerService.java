@@ -36,29 +36,30 @@ public class WorkerService implements BaseService {
         return new WorkerJsonMapper();
     }
 
-    public Optional<Worker> create(String name, LocalDate dateOfBirth, String email, Level level, int salary) {
+    public Optional<Worker> create(Worker worker) {
         try {
-            validateWorkerFields(name, dateOfBirth, email, level, salary);
-            logger.info("Creating worker with name {}", name);
+            validateWorkerFields(worker.getName(), worker.getDateOfBirth(), worker.getEmail(), worker.getLevel(), worker.getSalary());
+            logger.info("Creating worker with name {}", worker.getName());
 
             try (Connection connection = connectionManager.getConnection();
                  PreparedStatement statement = connection.prepareStatement(INSERT_INTO_WORKERS, Statement.RETURN_GENERATED_KEYS)) {
 
-                logger.info("prepared statement{}", statement);
-                statement.setString(1, name);
-                statement.setDate(2, Date.valueOf(dateOfBirth));
-                statement.setString(3, email);
-                statement.setString(4, level.toString());
-                statement.setInt(5, salary);
+                logger.info("prepared statement: {}", statement);
+                statement.setString(1, worker.getName());
+                statement.setDate(2, Date.valueOf(worker.getDateOfBirth()));
+                statement.setString(3, worker.getEmail());
+                statement.setString(4, worker.getLevel().toString());
+                statement.setInt(5, worker.getSalary());
+
                 int affectedRows = statement.executeUpdate();
-                logger.info("affected rows {}", affectedRows);
+                logger.info("affected rows: {}", affectedRows);
 
                 if (affectedRows > 0) {
                     try (ResultSet generatedKeys = statement.getGeneratedKeys()) {
                         if (generatedKeys.next()) {
                             long generatedId = generatedKeys.getLong(1);
-                            Worker worker = new Worker(generatedId, name, dateOfBirth, email, level, salary);
-                            return Optional.of(worker);
+                            Worker createdWorker = new Worker(generatedId, worker.getName(), worker.getDateOfBirth(), worker.getEmail(), worker.getLevel(), worker.getSalary());
+                            return Optional.of(createdWorker);
                         }
                     }
                 } else {
