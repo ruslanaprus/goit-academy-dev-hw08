@@ -55,7 +55,7 @@ class ClientServiceTest {
 
         var clients = clientService.listAll();
 
-        assertTrue(clients.isEmpty());
+        assertTrue(clients.isPresent() && clients.get().isEmpty());
     }
 
     @Test
@@ -72,20 +72,32 @@ class ClientServiceTest {
 
     @Test
     void testCreateClientSuccess() throws SQLException {
-        when(mockConnection.prepareStatement(anyString(), anyInt())).thenReturn(mockPreparedStatement);
+        Client testClient = new Client("Test Client");
+
+        // Mocking the prepareStatement and other SQL related interactions
+        when(mockConnection.prepareStatement(anyString(), eq(Statement.RETURN_GENERATED_KEYS)))
+                .thenReturn(mockPreparedStatement);
+
+        // Simulate 1 row affected by the insert
         when(mockPreparedStatement.executeUpdate()).thenReturn(1);
+
+        // Mock the ResultSet to simulate generated keys with both id and name
         when(mockPreparedStatement.getGeneratedKeys()).thenReturn(mockResultSet);
-        when(mockResultSet.next()).thenReturn(true);
-        when(mockResultSet.getLong(1)).thenReturn(100L);
+        when(mockResultSet.next()).thenReturn(true);  // Simulate that a row exists in the ResultSet
+        when(mockResultSet.getLong("id")).thenReturn(1L);  // Simulate the generated ID
+        when(mockResultSet.getString("name")).thenReturn("Test Client");  // Simulate the client name
 
-        Optional<Client> result = clientService.create(new Client("Test Client"));
+        // Execute the service method
+        Optional<Client> createdClient = clientService.create(testClient);
 
-        assertTrue(result.isPresent());
-        assertEquals(100L, result.get().getId());
-        assertEquals("Test Client", result.get().getName());
+        // Verify that the client was created successfully and returned with an ID and name
+        assertTrue(createdClient.isPresent());
+        assertEquals(1L, createdClient.get().getId());
+        assertEquals("Test Client", createdClient.get().getName());
 
-        verify(mockPreparedStatement).setString(1, "Test Client");
+        // Verify that the PreparedStatement executeUpdate and getGeneratedKeys methods were called
         verify(mockPreparedStatement).executeUpdate();
+        verify(mockPreparedStatement).getGeneratedKeys();
     }
 
     @Test
@@ -176,13 +188,21 @@ class ClientServiceTest {
 
     @Test
     void testListAllClientsEmptyResultSet() throws SQLException {
+        // Mock the PreparedStatement and ResultSet behavior
         when(mockConnection.prepareStatement(anyString())).thenReturn(mockPreparedStatement);
         when(mockPreparedStatement.executeQuery()).thenReturn(mockResultSet);
-        when(mockResultSet.isBeforeFirst()).thenReturn(false);
 
+        // Simulate an empty ResultSet by returning false on next()
+        when(mockResultSet.next()).thenReturn(false);
+
+        // Call the method under test
         Optional<List<Client>> result = clientService.listAll();
 
-        assertTrue(result.isEmpty());
+        // Assert that the result is present but contains an empty list
+        assertTrue(result.isPresent());
+        assertTrue(result.get().isEmpty());
+
+        // Verify that the executeQuery method was called on the PreparedStatement
         verify(mockPreparedStatement).executeQuery();
     }
 
