@@ -1,8 +1,16 @@
 # SQL Database Manager with REST API and Flyway Integration
 
-## Overview
-
 This project extends the functionality of the original [SQL Database Operations Manager](https://github.com/ruslanaprus/goit-academy-dev-hw07) by introducing several significant new features including database migrations using Flyway, implementation of CRUD operations for Workers, Clients, and Projects, and a flexible HTTP server to handle client requests for database communication. It is also enhanced with the use of the **Jackson** library for JSON serialization/deserialization.
+
+## Table of Contents
+1. [Key Features](#key-features)
+   -  [Flyway Database Migrations](#1-flyway-database-migrations)
+   - [Implementation of CRUD Operations](#2-implementation-of-crud-operations)
+   - [Implementation of HTTP Server for Client-Server Communication](#3-implementation-of-http-server-for-client-server-communication)
+   - [JSON Serialization/Deserialization with Jackson](#4-json-serializationdeserialization-with-jackson)
+   - [Modular Architecture](#5-modular-architecture)
+2. [File Structure and Key Classes](#file-structure-and-key-classes)
+3. [Usage Instructions](#usage-instructions)
 
 ## Key Features
 
@@ -59,7 +67,7 @@ The design of `MyHttpServer` and `HttpServerFactory` is service-agnostic. As lon
     - **JsonFormatter**: This class simplifies the conversion of Java objects to JSON and vice versa, enabling seamless data exchange between the HTTP server and client.
     - **JsonEntityMapper**: An interface that defines the contract for converting entities to and from JSON format. It is implemented by specific mappers like `ClientJsonMapper`, `ProjectJsonMapper`, and `WorkerJsonMapper`.
 
-### 5. **Modular Architecture and Code Enhancements**
+### 5. **Modular Architecture**
 - **Mappers**: Entity-specific mappers (e.g., `WorkerMapper`, `ClientMapper`, `ProjectMapper`) are used to map database records to entity objects and vice versa. This ensures that database interactions are clean and reusable.
 
 - **MetricRegistry**: The project now incorporates metrics for better performance monitoring and logging.
