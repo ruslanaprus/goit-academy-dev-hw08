@@ -7,6 +7,8 @@ import org.example.mapper.JsonEntityMapper;
 import org.example.mapper.WorkerMapper;
 import org.example.model.Level;
 import org.example.model.Worker;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.*;
 import java.time.LocalDate;
@@ -14,6 +16,7 @@ import java.time.LocalDate;
 import static org.example.constants.Constants.*;
 
 public class WorkerService extends AbstractGenericService<Worker> {
+    private static final Logger logger = LoggerFactory.getLogger(WorkerService.class);
     private final WorkerMapper workerMapper;
 
     public WorkerService(ConnectionManager connectionManager, MetricRegistry metricRegistry) {
@@ -28,7 +31,13 @@ public class WorkerService extends AbstractGenericService<Worker> {
 
     @Override
     protected PreparedStatement prepareCreateStatement(PreparedStatement ps, Worker worker) throws SQLException {
-        workerMapper.mapToStatement(ps, worker);
+        try {
+            validateWorkerFields(worker.getName(), worker.getDateOfBirth(), worker.getEmail(), worker.getLevel(), worker.getSalary());
+            workerMapper.mapToStatement(ps, worker);
+        } catch (IllegalArgumentException e) {
+            logger.error("Worker validation failed: {}", e.getMessage());
+            throw new SQLException("Worker validation failed: " + e.getMessage());
+        }
         return ps;
     }
 
@@ -72,4 +81,25 @@ public class WorkerService extends AbstractGenericService<Worker> {
     public JsonEntityMapper getJsonEntityMapper() {
         return new WorkerJsonMapper();
     }
+
+    private void validateWorkerFields(String name, LocalDate dateOfBirth, String email, Level level, int salary) {
+        try {
+            if (name == null || name.length() < 2 || name.length() > 1000) {
+                throw new IllegalArgumentException("Worker name must be between 2 and 1000 characters.");
+            }
+            if (email == null || !email.contains("@")) {
+                throw new IllegalArgumentException("Invalid email address.");
+            }
+            if (level == null) {
+                throw new IllegalArgumentException("Worker level cannot be null.");
+            }
+            if (salary <= 0) {
+                throw new IllegalArgumentException("Salary must be greater than zero.");
+            }
+        } catch (IllegalArgumentException e) {
+            logger.error("Validation error: {}", e.getMessage());
+            throw e;
+        }
+    }
+
 }

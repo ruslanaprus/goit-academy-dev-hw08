@@ -6,12 +6,15 @@ import org.example.mapper.ClientJsonMapper;
 import org.example.mapper.ClientMapper;
 import org.example.mapper.JsonEntityMapper;
 import org.example.model.Client;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.*;
 
 import static org.example.constants.Constants.*;
 
 public class ClientService extends AbstractGenericService<Client> {
+    private static final Logger logger = LoggerFactory.getLogger(ClientService.class);
     private final ClientMapper clientMapper;
 
     public ClientService(ConnectionManager connectionManager, MetricRegistry metricRegistry) {
@@ -26,7 +29,13 @@ public class ClientService extends AbstractGenericService<Client> {
 
     @Override
     protected PreparedStatement prepareCreateStatement(PreparedStatement ps, Client client) throws SQLException {
-        clientMapper.mapToStatement(ps, client);
+        try {
+            validateName(client.getName());
+            clientMapper.mapToStatement(ps, client);
+        } catch (IllegalArgumentException e) {
+            logger.error("Client validation failed: {}", e.getMessage());
+            throw new SQLException("Client validation failed: " + e.getMessage());
+        }
         return ps;
     }
 
@@ -65,5 +74,16 @@ public class ClientService extends AbstractGenericService<Client> {
     @Override
     public JsonEntityMapper getJsonEntityMapper() {
         return new ClientJsonMapper();
+    }
+
+    private void validateName(String name) {
+        try {
+            if (name == null || name.length() < 2 || name.length() > 1000) {
+                throw new IllegalArgumentException("Client name must be between 2 and 1000 characters.");
+            }
+        } catch (IllegalArgumentException e) {
+            logger.error("Validation error: {}", e.getMessage());
+            throw e;
+        }
     }
 }
