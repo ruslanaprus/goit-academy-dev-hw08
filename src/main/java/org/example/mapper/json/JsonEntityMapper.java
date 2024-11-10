@@ -1,4 +1,4 @@
-package org.example.mapper;
+package org.example.mapper.json;
 
 public interface JsonEntityMapper<T> {
     T fromJson(String json);

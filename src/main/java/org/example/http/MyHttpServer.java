@@ -4,7 +4,7 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import org.example.crud.BaseService;
 import org.example.formatter.JsonFormatter;
-import org.example.mapper.JsonEntityMapper;
+import org.example.mapper.json.JsonEntityMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

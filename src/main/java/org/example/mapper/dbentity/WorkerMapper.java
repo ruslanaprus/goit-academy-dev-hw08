@@ -1,4 +1,4 @@
-package org.example.mapper;
+package org.example.mapper.dbentity;
 
 import org.example.model.Worker;
 

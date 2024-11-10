@@ -1,6 +1,6 @@
 package org.example.crud;
 
-import org.example.mapper.JsonEntityMapper;
+import org.example.mapper.json.JsonEntityMapper;
 
 import java.util.List;
 import java.util.Optional;

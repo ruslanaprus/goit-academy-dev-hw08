@@ -2,9 +2,9 @@ package org.example.crud;
 
 import com.codahale.metrics.MetricRegistry;
 import org.example.db.ConnectionManager;
-import org.example.mapper.WorkerJsonMapper;
-import org.example.mapper.JsonEntityMapper;
-import org.example.mapper.WorkerMapper;
+import org.example.mapper.json.WorkerJsonMapper;
+import org.example.mapper.json.JsonEntityMapper;
+import org.example.mapper.dbentity.WorkerMapper;
 import org.example.model.Level;
 import org.example.model.Worker;
 import org.slf4j.Logger;

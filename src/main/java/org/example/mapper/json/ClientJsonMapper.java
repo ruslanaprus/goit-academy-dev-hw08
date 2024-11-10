@@ -1,4 +1,4 @@
-package org.example.mapper;
+package org.example.mapper.json;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.example.model.Client;

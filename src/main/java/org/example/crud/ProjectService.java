@@ -2,7 +2,9 @@ package org.example.crud;
 
 import com.codahale.metrics.MetricRegistry;
 import org.example.db.ConnectionManager;
-import org.example.mapper.*;
+import org.example.mapper.dbentity.ProjectMapper;
+import org.example.mapper.json.JsonEntityMapper;
+import org.example.mapper.json.ProjectJsonMapper;
 import org.example.model.Project;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

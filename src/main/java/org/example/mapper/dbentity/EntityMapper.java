@@ -1,4 +1,4 @@
-package org.example.mapper;
+package org.example.mapper.dbentity;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;

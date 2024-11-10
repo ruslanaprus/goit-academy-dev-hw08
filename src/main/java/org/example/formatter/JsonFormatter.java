@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateSerializer;
 import com.sun.net.httpserver.HttpExchange;
-import org.example.mapper.JsonEntityMapper;
+import org.example.mapper.json.JsonEntityMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -14,7 +14,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
 import java.util.Scanner;
 
 public class JsonFormatter {
@@ -67,19 +66,6 @@ public class JsonFormatter {
         } catch (JsonProcessingException e) {
             logger.error("Failed to convert object to JSON", e);
             throw new RuntimeException("Failed to convert object to JSON", e);
-        }
-    }
-
-    // Convert a list of objects to JSON (for lists of objects)
-    public <T> String objectToJson(List<T> list) {
-        logger.info("Converting list of objects to JSON, size: {}", list.size());
-        try {
-            String json = objectMapper.writeValueAsString(list);
-            logger.debug("Converted list of objects to JSON: {}", json);
-            return json;
-        } catch (JsonProcessingException e) {
-            logger.error("Failed to convert list of objects to JSON", e);
-            throw new RuntimeException("Failed to convert list of objects to JSON", e);
         }
     }
 

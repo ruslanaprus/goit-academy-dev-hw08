@@ -36,8 +36,5 @@ public class AppLauncher {
         JsonFormatter jsonFormatter = new JsonFormatter();
         HttpServerFactory httpServerFactory = new HttpServerFactory(services, jsonFormatter);
         httpServerFactory.startServer();
-
-        // Run CRUD operations (as needed)
-        ClientOperations.performCrudOperations(clientService);
     }
 }
